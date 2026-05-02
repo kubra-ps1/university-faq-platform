@@ -1,0 +1,33 @@
+# --- Git & Metadata ---
+.git
+.gitignore
+README.md
+LICENSE
+CONTRIBUTING.md
+
+# --- Python & Cache ---
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Virtual Environments (Kritik!) ---
+venv/
+.venv/
+env/
+
+# --- Node.js / Frontend ---
+# Docker konteynerı kendi paketlerini kursun, seninkileri kopyalamasın
+**/node_modules/
+frontend/dist/
+
+# --- Secrets ---
+.env
+
+# --- Docker ---
+docker-compose.yml
+Dockerfile
