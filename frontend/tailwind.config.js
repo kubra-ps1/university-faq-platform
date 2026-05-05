@@ -8,9 +8,30 @@ export default {
     extend: {
       colors: {
         dpu: {
-          navy: '#1B254B',
-          blue: '#2D60FF',
-          bg: '#F4F7FE',
+          green: '#059669',     // emerald-600
+          dark: '#047857',      // emerald-700
+          light: '#34d399',     // emerald-400
+          bg: '#f8fafc',        // slate-50
+          surface: '#ffffff',
+          text: '#0f172a',      // slate-900
+          textMuted: '#64748b'  // slate-500
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.4s ease-out',
+        'slide-up': 'slideUp 0.4s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '10%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         }
       }
     },
