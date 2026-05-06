@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {register} from '../../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { TreePine, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -54,6 +55,8 @@ export default function RegisterPage() {
     department: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success,setSuccess]=useState<string |null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -69,14 +72,37 @@ export default function RegisterPage() {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    setTimeout(() => {
+    setError(null);
+    if(formData.email.trim() == '' || formData.fullName.trim() == ''|| formData.faculty.trim() == '' || formData.department.trim() == '' || formData.password.trim() == '' || formData.confirmPassword.trim() == '' ){
+      setError('Lütfen boşlukları doldurunuz');
       setIsLoading(false);
-      navigate('/auth/login');
-    }, 800);
+      return;
+    }
+    if(formData.password !==formData.confirmPassword){
+      setError('Şifreler birbiriyle eşleşmiyor lütfen kontrol ediniz');
+      setIsLoading(false);
+      return;
+
+    }
+    try{
+      const response=await register(formData);
+      setSuccess(response.message);
+      setTimeout(() => {
+        navigate('/auth/login');
+      },2000);
+
+
+    }
+  catch (err:any) {
+      setError(err.message)
+    }
+    finally{
+      setIsLoading(false)
+    }
+    
   };
 
   return (
@@ -101,6 +127,8 @@ export default function RegisterPage() {
 
         <div className="glass-card p-10 border-white/5 shadow-2xl">
           <form onSubmit={handleRegister} className="space-y-6">
+            {error && <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">{error}</div>}
+            {success && <div className="p-3 text-sm text-green-600 bg-green-50 rounded-md">{success}</div>}
             <Input 
               label="Ad Soyad" 
               name="fullName"

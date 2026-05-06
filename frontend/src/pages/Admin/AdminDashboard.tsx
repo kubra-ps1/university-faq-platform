@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Users, FileQuestion, Clock, Sparkles } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdminLayout } from '../../components/layout/AdminLayout';
+
 import { api } from '../../services/api';
 import type { KeywordData, TrafficData } from '../../types';
 

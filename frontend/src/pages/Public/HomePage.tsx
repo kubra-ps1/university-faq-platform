@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronDown, ChevronUp, Heart, Bookmark, Info, HelpCircle, TreePine, Sparkles } from 'lucide-react';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
+
 import { api } from '../../services/api';
 import type { Category, Question } from '../../types';
 import { Button } from '../../components/ui/Button';
