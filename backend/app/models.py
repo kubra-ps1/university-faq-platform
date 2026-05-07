@@ -1,4 +1,4 @@
-# backend/app/models.py
+# models.py  (kök dizin — backend/app/models.py ile aynı)
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean,
     ForeignKey, Float, DateTime, Enum
@@ -44,9 +44,9 @@ class User(Base):
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    questions   = relationship("Question",   back_populates="user",   cascade="all, delete-orphan")
-    saved_items = relationship("SavedItem",  back_populates="user",   cascade="all, delete-orphan")
-    search_logs = relationship("SearchLog",  back_populates="user")
+    questions   = relationship("Question",  back_populates="user",  cascade="all, delete-orphan")
+    saved_items = relationship("SavedItem", back_populates="user",  cascade="all, delete-orphan")
+    search_logs = relationship("SearchLog", back_populates="user")
 
 
 class Category(Base):
@@ -66,8 +66,8 @@ class Question(Base):
     id               = Column(Integer, primary_key=True, index=True)
     user_id          = Column(Integer, ForeignKey("users.id",      ondelete="CASCADE"), nullable=False)
     category_id      = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
-    question_text    = Column(Text,    nullable=False)
-    answer_text      = Column(Text,    nullable=True)
+    question_text    = Column(Text, nullable=False)
+    answer_text      = Column(Text, nullable=True)
     status           = Column(Enum(QuestionStatus), default=QuestionStatus.pending, nullable=False)
     ai_checked       = Column(Boolean, default=False, nullable=False)
     ai_reject_reason = Column(String(500), nullable=True)
@@ -109,16 +109,16 @@ class SearchLog(Base):
 
 class AILog(Base):
     """
-    AI moderasyon geçmişi - her soru kontrol edildiğinde kayıt oluşturulur.
-    Diyagramdaki AI_LOGS tablosuna karşılık gelir.
+    AI moderasyon geçmişi — diyagramdaki ai_logs tablosu.
+    Her soru kontrol edildiğinde kayıt oluşturulur.
     """
     __tablename__ = "ai_logs"
 
     id           = Column(Integer, primary_key=True, index=True)
     question_id  = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
     action       = Column(Enum(AIAction), nullable=False)
-    confidence   = Column(Float,   nullable=True)   # 0.0 - 1.0 arası güven skoru
-    reason       = Column(Text,    nullable=True)   # Reddetme/işaretleme nedeni
+    confidence   = Column(Float,  nullable=True)   # 0.0 - 1.0 güven skoru
+    reason       = Column(Text,   nullable=True)   # Red/işaretleme nedeni
     processed_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

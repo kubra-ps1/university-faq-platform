@@ -1,9 +1,8 @@
-# backend/app/main.py
+# main.py  (kök dizin — backend/app/main.py ile aynı)
 from fastapi import FastAPI, Depends, HTTPException, status, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
-import random
 import os
 
 from . import models, schemas, auth
@@ -180,7 +179,6 @@ def search_faq(q: str, db: Session = Depends(get_db), current_user=Depends(auth.
     """Benzer cevaplanmış soruları arar ve arama kaydeder."""
     similar = _find_similar_questions(q, db)
 
-    # Arama kaydı
     log = models.SearchLog(
         query=q,
         user_id=current_user.id,
@@ -204,8 +202,8 @@ def get_all_faq(db: Session = Depends(get_db)):
     categories = db.query(models.Category).all()
     return [
         {
-            "id":        cat.id,
-            "category":  cat.name,
+            "id":       cat.id,
+            "category": cat.name,
             "questions": [
                 q for q in cat.questions
                 if q.status == models.QuestionStatus.answered
@@ -235,14 +233,12 @@ def get_categories(db: Session = Depends(get_db)):
 
 @app.post("/api/questions", response_model=schemas.QuestionDetail, tags=["Student"])
 def ask_question(
-    question: schemas.QuestionCreate,
+    question:     schemas.QuestionCreate,
     db:           Session = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
     """Öğrenci soru sorar. Kaba dil ve tekrar kontrolü yapılır."""
-    # Kaba dil kontrolü
-    is_rude = _check_rudeness(question.question_text)
-    if is_rude:
+    if _check_rudeness(question.question_text):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sorunuzda uygunsuz ifadeler tespit edildi. Lütfen nazik bir dil kullanın.",
@@ -261,19 +257,18 @@ def ask_question(
         question_text=question.question_text,
         category_id=question.category_id,
         status=models.QuestionStatus.pending,
-        ai_checked=True,  # kaba dil kontrolü yapıldı
+        ai_checked=True,
     )
     db.add(new_q)
-    db.flush()  # id almak için
+    db.flush()
 
     # AI log kaydı
-    ai_log = models.AILog(
+    db.add(models.AILog(
         question_id=new_q.id,
         action=models.AIAction.approved,
         confidence=1.0,
         reason=None,
-    )
-    db.add(ai_log)
+    ))
     db.commit()
     db.refresh(new_q)
     return new_q
@@ -292,7 +287,7 @@ def get_my_questions(
 
 @app.delete("/api/questions/{question_id}", tags=["Student"])
 def delete_question(
-    question_id: int,
+    question_id:  int,
     db:           Session = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
@@ -301,15 +296,11 @@ def delete_question(
     if not q:
         raise HTTPException(status_code=404, detail="Soru bulunamadı.")
 
-    # Yetki kontrolü: sadece kendi sorusunu silebilir
     if q.user_id != current_user.id and current_user.role not in ("admin", "staff"):
         raise HTTPException(status_code=403, detail="Bu soruyu silme yetkiniz yok.")
 
     if q.status == models.QuestionStatus.answered and current_user.role not in ("admin", "staff"):
-        raise HTTPException(
-            status_code=400,
-            detail="Cevaplanmış sorular silinemez.",
-        )
+        raise HTTPException(status_code=400, detail="Cevaplanmış sorular silinemez.")
 
     db.delete(q)
     db.commit()
@@ -329,14 +320,13 @@ def get_saved_items(
 
 @app.post("/api/saved-items/{question_id}", tags=["Student"])
 def save_item(
-    question_id: int,
+    question_id:  int,
     db:           Session = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
     """Soruyu favorilere ekler."""
-    # Zaten kayıtlı mı?
     existing = db.query(models.SavedItem).filter(
-        models.SavedItem.user_id    == current_user.id,
+        models.SavedItem.user_id     == current_user.id,
         models.SavedItem.question_id == question_id,
     ).first()
     if existing:
@@ -355,13 +345,13 @@ def save_item(
 
 @app.delete("/api/saved-items/{question_id}", tags=["Student"])
 def unsave_item(
-    question_id: int,
+    question_id:  int,
     db:           Session = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
     """Soruyu favorilerden çıkarır."""
     saved = db.query(models.SavedItem).filter(
-        models.SavedItem.user_id    == current_user.id,
+        models.SavedItem.user_id     == current_user.id,
         models.SavedItem.question_id == question_id,
     ).first()
     if not saved:
@@ -378,7 +368,7 @@ def unsave_item(
 
 @app.get("/api/admin/stats", response_model=schemas.Stats, tags=["Admin"])
 def get_stats(
-    db:           Session = Depends(get_db),
+    db:    Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Admin istatistik paneli."""
@@ -390,7 +380,7 @@ def get_stats(
 
     # En çok aranan kelimeler
     words = db.query(models.SearchLog.query).all()
-    word_counts: dict[str, int] = {}
+    word_counts: dict = {}
     for (w,) in words:
         for word in w.lower().split():
             if len(word) > 2:
@@ -400,7 +390,7 @@ def get_stats(
         for k, v in sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10]
     ]
 
-    # Son 7 günlük trafik
+    # Son 7 günlük gerçek trafik
     traffic = []
     for i in range(6, -1, -1):
         day = datetime.now(timezone.utc) - timedelta(days=i)
@@ -424,7 +414,7 @@ def get_stats(
 
 @app.get("/api/admin/pending", tags=["Admin"])
 def get_admin_pending(
-    db:     Session = Depends(get_db),
+    db:    Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Bekleyen soruları döndürür — admin incelemesi için."""
@@ -434,7 +424,7 @@ def get_admin_pending(
 
     return [
         {
-            "id":           q.id,
+            "id":            q.id,
             "question_text": q.question_text,
             "student_name":  q.user.full_name if q.user else "Bilinmiyor",
             "faculty":       q.user.faculty if q.user else None,
@@ -450,8 +440,8 @@ def get_admin_pending(
 @app.patch("/api/questions/{question_id}/answer", response_model=schemas.QuestionDetail, tags=["Admin"])
 def answer_question(
     question_id: int,
-    answer:       schemas.QuestionAnswer,
-    db:           Session = Depends(get_db),
+    answer:      schemas.QuestionAnswer,
+    db:          Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Admin soruyu cevaplar."""
@@ -470,8 +460,8 @@ def answer_question(
 @app.patch("/api/questions/{question_id}/reject", response_model=schemas.QuestionDetail, tags=["Admin"])
 def reject_question(
     question_id: int,
-    body:         schemas.QuestionReject = schemas.QuestionReject(),
-    db:           Session = Depends(get_db),
+    body:        schemas.QuestionReject = schemas.QuestionReject(),
+    db:          Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Admin soruyu reddeder."""
@@ -479,7 +469,7 @@ def reject_question(
     if not q:
         raise HTTPException(status_code=404, detail="Soru bulunamadı.")
 
-    q.status          = models.QuestionStatus.rejected
+    q.status           = models.QuestionStatus.rejected
     q.ai_reject_reason = body.reason
     db.commit()
     db.refresh(q)
@@ -488,9 +478,9 @@ def reject_question(
 
 @app.get("/api/pool", tags=["Admin"])
 def get_question_pool(
-    db:     Session = Depends(get_db),
+    db:    Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
-    skip: int = 0,
+    skip:  int = 0,
     limit: int = 50,
 ):
     """Tüm soruların havuzunu döndürür — admin yönetim ekranı."""
@@ -518,8 +508,8 @@ def get_question_pool(
 
 @app.post("/api/categories", response_model=schemas.CategoryOut, tags=["Admin"])
 def create_category(
-    cat:    schemas.CategoryCreate,
-    db:     Session = Depends(get_db),
+    cat:   schemas.CategoryCreate,
+    db:    Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Yeni kategori oluşturur."""
@@ -535,7 +525,7 @@ def create_category(
 @app.delete("/api/categories/{category_id}", tags=["Admin"])
 def delete_category(
     category_id: int,
-    db:           Session = Depends(get_db),
+    db:          Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
 ):
     """Kategoriyi siler."""
@@ -551,7 +541,7 @@ def delete_category(
 
 @app.get("/api/admin/ai-logs", response_model=list[schemas.AILogOut], tags=["Admin"])
 def get_ai_logs(
-    db:     Session = Depends(get_db),
+    db:    Session = Depends(get_db),
     _admin=Depends(auth.require_admin),
     skip:  int = 0,
     limit: int = 100,

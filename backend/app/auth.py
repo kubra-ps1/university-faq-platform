@@ -1,4 +1,4 @@
-# backend/app/auth.py
+# auth.py  (kök dizin — backend/app/auth.py ile aynı)
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -20,11 +20,11 @@ if not SECRET_KEY:
         "backend/.env dosyasına SECRET_KEY=... ekleyin."
     )
 
-ALGORITHM                  = os.getenv("ALGORITHM", "HS256")
+ALGORITHM                   = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
-pwd_context    = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme  = OAuth2PasswordBearer(tokenUrl="/api/login")
+pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 
 # ── Şifre İşlemleri ──────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ def get_current_active_user(
 def require_admin(
     current_user=Depends(get_current_user),
 ):
-    """Sadece admin rolüne izin verir."""
+    """Sadece admin veya staff rolüne izin verir."""
     if current_user.role not in ("admin", "staff"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

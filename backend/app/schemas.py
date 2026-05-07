@@ -1,4 +1,4 @@
-# backend/app/schemas.py
+# schemas.py  (kök dizin — backend/app/schemas.py ile aynı)
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime
@@ -97,22 +97,22 @@ class QuestionCreate(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    id:              int
-    question_text:   str
-    answer_text:     Optional[str] = None
-    status:          str
-    ai_checked:      bool
-    category_id:     Optional[int] = None
-    created_at:      datetime
-    answered_at:     Optional[datetime] = None
+    id:           int
+    question_text: str
+    answer_text:  Optional[str] = None
+    status:       str
+    ai_checked:   bool
+    category_id:  Optional[int] = None
+    created_at:   datetime
+    answered_at:  Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
 
 class QuestionDetail(QuestionResponse):
-    """Daha fazla bilgi içeren detaylı soru — öğrenci ve admin için"""
-    user_id:         int
+    """Daha fazla bilgi içeren detaylı soru — öğrenci ve admin için."""
+    user_id:          int
     ai_reject_reason: Optional[str] = None
 
     class Config:

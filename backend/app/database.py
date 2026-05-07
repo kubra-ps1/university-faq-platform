@@ -1,4 +1,4 @@
-# backend/app/database.py
+# database.py  (kök dizin — backend/app/database.py ile aynı)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
