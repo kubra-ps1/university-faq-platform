@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Heart, Trash2, TreePine } from 'lucide-react';
 import { AdminLayout } from '../../components/layout/AdminLayout';
+
 import { api } from '../../services/api';
 import type { Question } from '../../types';
 
@@ -53,7 +54,7 @@ export default function QuestionPoolPage() {
                 <h4 className="text-lg font-bold text-white mb-3">{q.text}</h4>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-dpu-textMuted">
                   <span className="flex items-center gap-1.5">
-                    <Heart size={14} className="text-red-400 fill-current" /> {q.favorites} Favori
+
                   </span>
                   <span className="flex items-center gap-1.5">
                     <div className="w-5 h-5 bg-dpu-green/20 border border-dpu-green/30 rounded-full flex items-center justify-center text-xs font-black text-dpu-green">

@@ -1,139 +1,123 @@
-import { mockCategories, mockQuestions, mockKeywordData, mockTrafficData } from './mockData';
-import type { Question, Category, KeywordData, TrafficData } from '../types';
+import type { LoginCredentials, RegisterRequest, AuthResponse, RegisterResponse } from '../types/auth';
 
-// Simulate network delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// const API_BASE_URL='http://localhost:8000/api'
 
-export const api = {
-  // Public & Search
-  getCategories: async (): Promise<Category[]> => {
-    await delay(300);
-    return [...mockCategories];
-  },
-  
-  getQuestionsByCategory: async (categoryId: string): Promise<Question[]> => {
-    await delay(400);
-    return mockQuestions.filter(q => q.categoryId === categoryId && q.status === 'answered');
-  },
+// export const login=async(credential:LoginCredentials) : Promise<AuthResponse> =>{
+//   const response=await fetch(API_BASE_URL+'/auth/login',{
+//     method:'POST',
+//     headers:{'Content-Type':'application/json'},
+//     body:JSON.stringify(credential)
+//   });
 
-  searchQuestions: async (query: string): Promise<{ type: 'exact' | 'similar' | 'none', data: Question[] }> => {
-    await delay(600);
-    const q = query.toLowerCase();
-    
-    // 1) Find answered exact match (simulated)
-    const exactMatch = mockQuestions.find(
-      mq => mq.status === 'answered' && mq.text.toLowerCase().includes(q)
-    );
-    if (exactMatch) {
-      return { type: 'exact', data: [exactMatch] };
-    }
+//   if(!response.ok){
+//     const errorData=await response.json();
+//     const errorMessage=errorData.detail || 'Giriş başarısız.Lütfen bilgilerinizi kontrol ediniz.';
+//     throw new Error(errorMessage);
+//   }
+//   const data:AuthResponse=await response.json();
+//   return data;
+// }
 
-    // 2) Find pending similar questions
-    const similar = mockQuestions.filter(
-      mq => mq.status === 'pending' && mq.text.toLowerCase().includes(q)
-    );
-    if (similar.length > 0) {
-      // Sort by favorites descending
-      return { type: 'similar', data: similar.sort((a, b) => b.favorites - a.favorites) };
-    }
+// export const register=async(registerData:RegisterRequest) :Promise<RegisterResponse> =>{
+//   const response=await fetch(API_BASE_URL+'/auth/register',{
+//     method:'POST',
+//     headers:{'Content-Type':'application/json'},
+//     body:JSON.stringify(registerData)
+//   });
 
-    // 3) None found
-    return { type: 'none', data: [] };
-  },
+//   if(!response.ok){
+//     const errorData=await response.json();
 
-  // Student Actions
-  askQuestion: async (text: string, _authorId: string, _authorName: string): Promise<{ success: boolean, message: string }> => {
-    await delay(800);
-    
-    // AI Mock Logic: Reject inappropriate questions
-    const inappropriateWords = ['aptal', 'kötü', 'saçma'];
-    const isRude = inappropriateWords.some(word => text.toLowerCase().includes(word));
-    
-    if (isRude) {
-      return { success: false, message: 'Sorunuz uygun olmayan ifadeler içeriyor. Lütfen daha uygun bir dille tekrar sorunuz.' };
-    }
-    
-    return { success: true, message: 'Sorunuz başarıyla havuza eklendi.' };
-  },
+//     if(response.status === 409){
+//       throw new Error(errorData.detail || 'Bu eposta sistemde zaten kayıtlı')
+//     }
 
-  toggleFavorite: async (_questionId: string): Promise<boolean> => {
-    await delay(200);
-    return true; // simulated success
-  },
 
-  toggleSave: async (_questionId: string): Promise<boolean> => {
-    await delay(200);
-    return true; // simulated success
-  },
+//     if(response.status >= 500){
+//       throw new Error('Sistemde geçici bir teknik bir hata yaşanmaktadır.Lütfen daha sonra tekrar deneyiniz.')
+//     }
 
-  getStudentQuestions: async (studentId: string): Promise<Question[]> => {
-    await delay(400);
-    return mockQuestions.filter(q => q.authorId === studentId);
-  },
+//     throw new Error(errorData.detail || 'Kayıt işlemi sırasında bir hata oluştu.')
 
-  getStudentInterests: async (): Promise<Question[]> => {
-    await delay(400);
-    return mockQuestions.filter(q => q.isFavoritedByMe || q.isSavedByMe);
-  },
+//   }
 
-  deleteMyQuestion: async (_questionId: string): Promise<boolean> => {
-    await delay(300);
-    return true;
-  },
+//   const data:RegisterResponse=await response.json();
+//   return data;
 
-  // Admin Actions
-  getDashboardStats: async () => {
-    await delay(400);
-    return {
-      totalQuestions: 1250,
-      pendingQuestions: 85,
-      totalStudents: 4500
-    };
-  },
+// }
 
-  getKeywordData: async (): Promise<KeywordData[]> => {
-    await delay(300);
-    return mockKeywordData;
-  },
 
-  getTrafficData: async (): Promise<TrafficData[]> => {
-    await delay(300);
-    return mockTrafficData;
-  },
 
-  getPendingQuestions: async (): Promise<Question[]> => {
-    await delay(500);
-    // Return pending questions with > 10 favorites
-    return mockQuestions.filter(q => q.status === 'pending' && q.favorites > 10);
-  },
+// ... (importların duracak) ...
 
-  getAllPoolQuestions: async (): Promise<Question[]> => {
-    await delay(400);
-    return mockQuestions.filter(q => q.status === 'pending');
-  },
+/* 
+  GERÇEK FETCH KODLARIN BURADA YORUM SATIRINDA DURSUN 
+  BACKEND BİTİNCE BUNLARI GERİ AÇACAĞIZ.
+*/
 
-  getAnsweredQuestions: async (): Promise<Question[]> => {
-    await delay(400);
-    return mockQuestions.filter(q => q.status === 'answered');
-  },
+// --- GEÇİCİ MOCK (SAHTE) API SERVİSLERİ ---
 
-  editAnsweredQuestion: async (_id: string, _text: string, _answer: string): Promise<boolean> => {
-    await delay(400);
-    return true;
-  },
+export const login = async (credential: LoginCredentials): Promise<AuthResponse> => {
+  return new Promise((resolve, reject) => {
+    // 1.5 saniye bekle (Loading butonunu test etmek için)
+    setTimeout(() => {
+      // Hata test etmek istersen şifreyi yanlış girince hata fırlatmasını sağlayabilirsin:
+      if (credential.password === 'yanlis') {
+         return reject(new Error('Şifre yanlış veya e-posta bulunamadı.'));
+      }
+      
+      // Başarılı giriş senaryosu:
+      resolve({
+        jwt: "fake_jwt_token_123_abc",
+        user: { id: 1, fullName: "Test Kullanıcı", email: credential.email, role: "student" }
+      });
+    }, 1500);
+  });
+};
 
-  answerQuestion: async (_questionId: string, _answer: string, _categoryId: string): Promise<boolean> => {
-    await delay(600);
-    return true;
-  },
+export const register = async (registerData: RegisterRequest): Promise<RegisterResponse> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Hata senaryosu testi (Eğer e-posta test@dpu.edu.tr girilirse hata ver)
+      if (registerData.email === 'test@dpu.edu.tr') {
+         return reject(new Error('Bu e-posta sistemde zaten kayıtlı.'));
+      }
 
-  deleteQuestionAsAdmin: async (_questionId: string): Promise<boolean> => {
-    await delay(300);
-    return true;
-  },
-  
-  createQuestionAsAdmin: async (_text: string, _answer: string, _categoryId: string): Promise<boolean> => {
-    await delay(500);
-    return true;
-  }
+      // Başarılı kayıt senaryosu:
+      resolve({
+        message: "Başarılı bir şekilde kayıt oldunuz."
+      });
+    }, 1500);
+  });
+};
+
+import { mockQuestions, mockCategories, mockKeywordData, mockTrafficData } from './mockData';
+
+export const api: any = {
+  getDashboardStats: async () => ({ totalQuestions: 150, pendingQuestions: 12, totalStudents: 300 }),
+  getKeywordData: async () => mockKeywordData,
+  getTrafficData: async () => mockTrafficData,
+  getQuestions: async () => mockQuestions,
+  getPendingQuestions: async () => mockQuestions.filter((q: any) => q.status === 'pending'),
+  getAnsweredQuestions: async () => mockQuestions.filter((q: any) => q.status === 'answered'),
+  getAllPoolQuestions: async () => mockQuestions,
+  getQuestionsByCategory: async (..._args: any[]) => mockQuestions,
+  searchQuestions: async (..._args: any[]) => ({ type: "exact", data: mockQuestions }),
+  getStudentQuestions: async (..._args: any[]) => mockQuestions,
+  getStudentInterests: async (..._args: any[]) => mockQuestions,
+  getCategories: async () => mockCategories,
+  approveQuestion: async (..._args: any[]) => {},
+  rejectQuestion: async (..._args: any[]) => {},
+  deleteQuestion: async (..._args: any[]) => {},
+  deleteQuestionAsAdmin: async (..._args: any[]) => {},
+  deleteMyQuestion: async (..._args: any[]) => {},
+  addCategory: async (..._args: any[]) => {},
+  deleteCategory: async (..._args: any[]) => {},
+  updateCategory: async (..._args: any[]) => {},
+  askQuestion: async (..._args: any[]) => ({ success: true, message: 'ok' }),
+  answerQuestion: async (..._args: any[]) => {},
+  createQuestionAsAdmin: async (..._args: any[]) => {},
+  editAnsweredQuestion: async (..._args: any[]) => {},
+  getUserProfile: async (..._args: any[]) => null,
+  updateProfile: async (..._args: any[]) => {},
 };

@@ -17,7 +17,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Mühendislik Fakültesi',
     authorDepartment: 'Bilgisayar Mühendisliği',
     status: 'answered',
-    favorites: 120,
+
     createdAt: '2026-05-01T10:00:00Z',
     categoryId: '2',
     answer: 'Ders kayıtları Akademik Takvimde belirtildiği üzere 15 Eylül - 20 Eylül tarihleri arasında yapılacaktır. OBS (Öğrenci Bilgi Sistemi) üzerinden işlemlerinizi tamamlayabilirsiniz.',
@@ -30,7 +30,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Eğitim Fakültesi',
     authorDepartment: 'Sınıf Öğretmenliği',
     status: 'answered',
-    favorites: 85,
+
     createdAt: '2026-04-28T14:30:00Z',
     categoryId: '4',
     answer: 'Evet, yaz okulu başvuruları Haziran ayının ilk haftası başlayacaktır. İlgili derslerin listesi fakülte panolarında ve web sitemizde duyurulacaktır.',
@@ -43,7 +43,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'İktisadi ve İdari Bilimler Fakültesi',
     authorDepartment: 'İşletme',
     status: 'answered',
-    favorites: 210,
+
     createdAt: '2026-04-15T09:15:00Z',
     categoryId: '3',
     answer: 'KYK yurt başvuruları e-Devlet üzerinden Gençlik ve Spor Bakanlığı hizmetleri altından belirtilen tarihlerde yapılmaktadır. Üniversitemizin doğrudan yurt kaydı alma yetkisi yoktur.',
@@ -56,9 +56,9 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Mühendislik Fakültesi',
     authorDepartment: 'Bilgisayar Mühendisliği',
     status: 'pending',
-    favorites: 15,
+
     createdAt: '2026-05-02T11:20:00Z',
-    isFavoritedByMe: true,
+
   },
   {
     id: '105',
@@ -68,7 +68,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Fen Edebiyat Fakültesi',
     authorDepartment: 'Matematik',
     status: 'pending',
-    favorites: 45,
+
     createdAt: '2026-05-02T12:00:00Z',
   },
   {
@@ -79,7 +79,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Eğitim Fakültesi',
     authorDepartment: 'Sınıf Öğretmenliği',
     status: 'pending',
-    favorites: 8,
+
     createdAt: '2026-05-01T16:45:00Z',
   },
   {
@@ -90,7 +90,7 @@ export const mockQuestions: Question[] = [
     authorFaculty: 'Spor Bilimleri Fakültesi',
     authorDepartment: 'Antrenörlük',
     status: 'rejected',
-    favorites: 2,
+
     createdAt: '2026-04-20T10:00:00Z',
   }
 ];

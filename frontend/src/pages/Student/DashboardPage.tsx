@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { Search, ChevronDown, ChevronUp, Heart, Bookmark, Info, Send, TreePine, Sparkles } from 'lucide-react';
 import { StudentLayout } from '../../components/layout/StudentLayout';
+
 import { api } from '../../services/api';
 import type { Category, Question } from '../../types';
 import { Button } from '../../components/ui/Button';

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 import { AdminLayout } from '../../components/layout/AdminLayout';
+
 import { api } from '../../services/api';
 import type { Category } from '../../types';
 import { Modal } from '../../components/ui/Modal';

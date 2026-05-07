@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import {login} from '../../services/api'
 import { BookOpen, User, ShieldCheck } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,23 +9,35 @@ import { Card } from '../../components/ui/Card';
 export default function LoginPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      if (activeTab === 'student') {
+    setError(null);
+    try{
+      const response=await login({email,password});
+      localStorage.setItem('token',response.jwt);
+      if(response.user.role === 'student'){
         navigate('/student/dashboard');
-      } else {
+      }
+      else if(response.user.role === 'admin'){
         navigate('/admin/dashboard');
       }
-    }, 800);
+      else{
+        navigate('/public');
+      }
+    }
+    catch (err:any) {
+      setError(err.message)
+    }
+    finally{
+      setIsLoading(false);
+    }
+    
   };
 
   return (
@@ -61,6 +74,12 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+                <div className='p-3 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md'>
+                  {error}
+                </div>
+            )
+            }
             <Input 
               label="E-posta Adresi" 
               type="email" 
