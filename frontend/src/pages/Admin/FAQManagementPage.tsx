@@ -19,15 +19,14 @@ export default function FAQManagementPage() {
   const [editAnswer, setEditAnswer] = useState('');
 
   useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const answered = await api.getAnsweredQuestions();
+      setQuestions(answered);
+      setIsLoading(false);
+    };
     fetchData();
   }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const answered = await api.getAnsweredQuestions();
-    setQuestions(answered);
-    setIsLoading(false);
-  };
 
   const openEditModal = (q: Question) => {
     setSelectedQuestion(q);

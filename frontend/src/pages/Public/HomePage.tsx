@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, ChevronUp, Heart, Bookmark, Info, HelpCircle, TreePine, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, HelpCircle, TreePine, Sparkles } from 'lucide-react';
 import { PublicNavbar } from '../../components/layout/PublicNavbar';
 
 import { api } from '../../services/api';
@@ -11,9 +11,11 @@ import { Modal } from '../../components/ui/Modal';
 export default function HomePage() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [categoryQuestions, setCategoryQuestions] = useState<Record<string, Question[]>>({});
-  const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -23,8 +25,22 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await api.getCategories();
-      setCategories(cats);
+      setIsLoading(true);
+      try {
+        const cats = await api.getCategories();
+        setCategories(cats);
+        
+        try {
+          const counts = await api.getCategoryCounts();
+          setCategoryCounts(counts);
+        } catch (countsError) {
+          console.error("Kategori sayıları çekilemedi (Docker yeniden başlatılması gerekebilir):", countsError);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchCategories();
   }, []);
@@ -195,8 +211,13 @@ export default function HomePage() {
                 <div className="h-px flex-1 bg-gradient-to-r from-dpu-green/50 to-transparent"></div>
               </div>
               
-              <div className="grid grid-cols-1 gap-6">
-                {categories.map((category) => (
+              {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dpu-green"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {categories.map((category) => (
                   <div key={category.id} className="glass-card overflow-hidden group">
                     <button
                       className="w-full p-8 text-left transition-all duration-300 hover:bg-white/5"
@@ -204,14 +225,15 @@ export default function HomePage() {
                     >
                       <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-start">
-                          <span className="text-2xl font-bold text-white group-hover:text-dpu-green transition-colors">{category.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-bold text-white group-hover:text-dpu-green transition-colors">{category.name}</span>
+                            <span className="bg-dpu-green/10 text-dpu-green py-0.5 px-3 rounded-md text-sm font-black">
+                              {categoryCounts[category.id] !== undefined ? categoryCounts[category.id] : category.questionCount}
+                            </span>
+                          </div>
                           <div className="p-2 rounded-lg bg-dpu-navy border border-white/5">
                             {expandedCategory === category.id ? <ChevronUp className="text-dpu-green" /> : <ChevronDown className="text-dpu-textMuted" />}
                           </div>
-                        </div>
-                        <div className="inline-flex items-center gap-2 text-dpu-green font-bold text-sm">
-                          <span className="w-1.5 h-1.5 bg-dpu-green rounded-full"></span>
-                          {category.questionCount} Kayıtlı Cevap
                         </div>
                       </div>
                     </button>
@@ -228,7 +250,8 @@ export default function HomePage() {
                     )}
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>

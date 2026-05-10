@@ -27,6 +27,7 @@ export interface Question {
   categoryId?: string;
   answer?: string;
   isSaved?: boolean; // 'İlgilendiklerim' durumu
+  favoriteCount?: number;
 }
 
 // Chart Data Types

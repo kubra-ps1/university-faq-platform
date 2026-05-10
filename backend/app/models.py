@@ -80,6 +80,10 @@ class Question(Base):
     saved_by = relationship("SavedItem", back_populates="question", cascade="all, delete-orphan")
     ai_logs  = relationship("AILog",     back_populates="question", cascade="all, delete-orphan")
 
+    @property
+    def favorite_count(self) -> int:
+        return len(self.saved_by)
+
 
 class SavedItem(Base):
     __tablename__ = "saved_items"

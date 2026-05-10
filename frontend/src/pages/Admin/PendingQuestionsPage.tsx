@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageSquare, Trash2, Plus, Sparkles, TreePine } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, Sparkles, TreePine } from 'lucide-react';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 
 import { api } from '../../services/api';
@@ -21,19 +21,18 @@ export default function PendingQuestionsPage() {
   const [newQuestionText, setNewQuestionText] = useState('');
 
   useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const [pending, cats] = await Promise.all([
+        api.getPendingQuestions(),
+        api.getCategories()
+      ]);
+      setQuestions(pending);
+      setCategories(cats);
+      setIsLoading(false);
+    };
     fetchData();
   }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const [pending, cats] = await Promise.all([
-      api.getPendingQuestions(),
-      api.getCategories()
-    ]);
-    setQuestions(pending);
-    setCategories(cats);
-    setIsLoading(false);
-  };
 
   const openAnswerModal = (q: Question) => {
     setSelectedQuestion(q);
@@ -41,7 +40,7 @@ export default function PendingQuestionsPage() {
       q.text.charAt(0).toUpperCase() + q.text.slice(1).toLowerCase().replace('?', '') + '?'
     );
     if (categories.length > 0) {
-      setSelectedCategory(categories[Math.floor(Math.random() * categories.length)].id);
+      setSelectedCategory(categories[0].id);
     }
     setAnswerText('');
     setIsAnswerModalOpen(true);

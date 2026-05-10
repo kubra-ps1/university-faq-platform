@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Trash2, TreePine } from 'lucide-react';
+import { Trash2, TreePine } from 'lucide-react';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 
 import { api } from '../../services/api';
@@ -10,15 +10,14 @@ export default function QuestionPoolPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const pool = await api.getAllPoolQuestions();
+      setQuestions(pool);
+      setIsLoading(false);
+    };
     fetchData();
   }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const pool = await api.getAllPoolQuestions();
-    setQuestions(pool);
-    setIsLoading(false);
-  };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Bu soruyu havuzdan silmek istediğinize emin misiniz?')) {

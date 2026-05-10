@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Lock, Heart, Bookmark, Trash2, Eye, Clock, CheckCircle, XCircle, TreePine, Sparkles } from 'lucide-react';
+import { User, Lock, Heart, Bookmark, Trash2, Eye, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { StudentLayout } from '../../components/layout/StudentLayout';
 
 import { api } from '../../services/api';
@@ -8,24 +7,32 @@ import type { Question } from '../../types';
 import { Badge } from '../../components/ui/Badge';
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'questions' | 'interests'>('questions');
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
   const [myInterests, setMyInterests] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{full_name?: string, email?: string, created_at?: string} | null>(null);
 
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      const [questions, interests] = await Promise.all([
-        api.getStudentQuestions('current-user-id'),
-        api.getStudentInterests()
-      ]);
-      setMyQuestions(questions);
-      setMyInterests(interests);
-      setIsLoading(false);
+      try {
+        const [questions, interests, user] = await Promise.all([
+          api.getStudentQuestions(),
+          api.getStudentInterests(),
+          api.getUserProfile().catch(() => null)
+        ]);
+        setMyQuestions(questions);
+        setMyInterests(interests);
+        if (user) setUserProfile(user);
+      } catch (error) {
+        console.error("Veriler çekilirken hata oluştu:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -33,13 +40,27 @@ export default function ProfilePage() {
   const handleDeleteQuestion = async (id: string) => {
     await api.deleteMyQuestion(id);
     setMyQuestions(prev => prev.filter(q => q.id !== id));
+  };
+
+  const handleRemoveInterest = async (id: string) => {
+    await api.removeInterest(id);
     setMyInterests(prev => prev.filter(q => q.id !== id));
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordForm({ current: '', new: '', confirm: '' });
-    alert('Şifre başarıyla güncellendi!');
+    if (passwordForm.new !== passwordForm.confirm) {
+      alert('Yeni şifreler eşleşmiyor!');
+      return;
+    }
+    try {
+      await api.changePassword(passwordForm.current, passwordForm.new);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      alert('Şifre başarıyla güncellendi!');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      alert('Hata: ' + (error?.response?.data?.detail || 'Şifre güncellenemedi.'));
+    }
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -54,7 +75,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <StudentLayout userName="Ahmet Yılmaz">
+    <StudentLayout userName={userProfile?.full_name || userProfile?.email || 'Öğrenci'}>
       <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
 
         {/* Profile Header */}
@@ -63,11 +84,13 @@ export default function ProfilePage() {
             <div className="w-24 h-24 bg-dpu-green/10 border-2 border-dpu-green/20 rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(0,237,100,0.1)]">
               <User size={48} className="text-dpu-green" />
             </div>
-            <h2 className="text-2xl font-black text-white mb-1">Ahmet Yılmaz</h2>
-            <p className="text-dpu-textMuted text-sm mb-4">ahmet.yilmaz@ogrenci.dpu.edu.tr</p>
+            <h2 className="text-2xl font-black text-white mb-1">{userProfile?.full_name || 'Öğrenci'}</h2>
+            <p className="text-dpu-textMuted text-sm mb-4">{userProfile?.email || 'ogrenci@dpu.edu.tr'}</p>
             <div className="w-full pt-4 border-t border-white/5 flex justify-between text-sm">
               <span className="text-dpu-textMuted">Kayıt Tarihi</span>
-              <span className="font-bold text-dpu-green">Eylül 2024</span>
+              <span className="font-bold text-dpu-green">
+                {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : 'Yükleniyor...'}
+              </span>
             </div>
           </div>
 
@@ -154,30 +177,42 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     myQuestions.map(q => (
-                      <div key={q.id} className="p-5 rounded-xl border border-white/5 hover:border-dpu-green/30 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center transition-all bg-dpu-navy/20">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-white mb-2">{q.text}</h4>
-                          <div className="flex items-center gap-3 text-sm">
-                            <StatusBadge status={q.status} />
+                      <div key={q.id} className="p-5 rounded-xl border border-white/5 hover:border-dpu-green/30 flex flex-col transition-all bg-dpu-navy/20">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-white mb-2">{q.text}</h4>
+                            <div className="flex items-center gap-3 text-sm">
+                              <StatusBadge status={q.status} />
+                              {q.favoriteCount !== undefined && (
+                                <span className="flex items-center gap-1 text-dpu-textMuted">
+                                  <Heart size={14} className="text-dpu-green" /> {q.favoriteCount}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+                            {q.status === 'answered' ? (
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 bg-dpu-green/10 text-dpu-green border border-dpu-green/20 rounded-xl hover:bg-dpu-green/20 transition-all font-bold text-sm"
+                                onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
+                              >
+                                <Eye size={16} /> İncele
+                              </button>
+                            ) : (
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all font-bold text-sm"
+                                onClick={() => handleDeleteQuestion(q.id)}
+                              >
+                                <Trash2 size={16} /> Sil
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
-                          {q.status === 'answered' ? (
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 bg-dpu-green/10 text-dpu-green border border-dpu-green/20 rounded-xl hover:bg-dpu-green/20 transition-all font-bold text-sm"
-                              onClick={() => navigate(`/student/dashboard#question-${q.id}`)}
-                            >
-                              <Eye size={16} /> Bak
-                            </button>
-                          ) : (
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all font-bold text-sm"
-                              onClick={() => handleDeleteQuestion(q.id)}
-                            >
-                              <Trash2 size={16} /> Sil
-                            </button>
-                          )}
-                        </div>
+                        {expandedId === q.id && q.answer && (
+                          <div className="mt-4 p-4 rounded-lg bg-dpu-navy/50 border border-white/5 text-dpu-textMuted text-sm animate-fade-in">
+                            <strong className="text-white">Cevap: </strong> {q.answer}
+                          </div>
+                        )}
                       </div>
                     ))
                   )
@@ -190,33 +225,45 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     myInterests.map(q => (
-                      <div key={q.id} className="p-5 rounded-xl border border-white/5 hover:border-dpu-green/30 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center transition-all bg-dpu-navy/20">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-white mb-2 flex items-start gap-2">
-                            <Bookmark size={16} className="text-dpu-green fill-current mt-0.5 flex-shrink-0" />
-                            {q.text}
-                          </h4>
-                          <div className="flex items-center gap-3 text-sm">
-                            <StatusBadge status={q.status} />
+                      <div key={q.id} className="p-5 rounded-xl border border-white/5 hover:border-dpu-green/30 flex flex-col transition-all bg-dpu-navy/20">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-white mb-2 flex items-start gap-2">
+                              <Bookmark size={16} className="text-dpu-green fill-current mt-0.5 flex-shrink-0" />
+                              {q.text}
+                            </h4>
+                            <div className="flex items-center gap-3 text-sm">
+                              <StatusBadge status={q.status} />
+                              {q.favoriteCount !== undefined && (
+                                <span className="flex items-center gap-1 text-dpu-textMuted">
+                                  <Heart size={14} className="text-dpu-green" /> {q.favoriteCount}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+                            {q.status === 'answered' && (
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 bg-dpu-green/10 text-dpu-green border border-dpu-green/20 rounded-xl hover:bg-dpu-green/20 transition-all font-bold text-sm"
+                                onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
+                              >
+                                <Eye size={16} /> İncele
+                              </button>
+                            )}
+                            <button
+                              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all font-bold text-sm"
+                              onClick={() => handleRemoveInterest(q.id)}
+                              title="Listeden Çıkar"
+                            >
+                              <Trash2 size={16} /> Sil
+                            </button>
                           </div>
                         </div>
-                        <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
-                          {q.status === 'answered' && (
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 bg-dpu-green/10 text-dpu-green border border-dpu-green/20 rounded-xl hover:bg-dpu-green/20 transition-all font-bold text-sm"
-                              onClick={() => navigate(`/student/dashboard#question-${q.id}`)}
-                            >
-                              <Eye size={16} /> Bak
-                            </button>
-                          )}
-                          <button
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all font-bold text-sm"
-                            onClick={() => handleDeleteQuestion(q.id)}
-                            title="Listeden Çıkar"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                        {expandedId === q.id && q.answer && (
+                          <div className="mt-4 p-4 rounded-lg bg-dpu-navy/50 border border-white/5 text-dpu-textMuted text-sm animate-fade-in">
+                            <strong className="text-white">Cevap: </strong> {q.answer}
+                          </div>
+                        )}
                       </div>
                     ))
                   )

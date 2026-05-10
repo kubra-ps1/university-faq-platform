@@ -9,7 +9,7 @@ import type { KeywordData, TrafficData } from '../../types';
 const COLORS = ['#00ED64', '#00684A', '#72FF96', '#00A35C', '#13AA52'];
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ totalQuestions: 0, pendingQuestions: 0, totalStudents: 0 });
+  const [stats, setStats] = useState({ total_questions: 0, pending_questions: 0, total_students: 0 });
   const [keywordData, setKeywordData] = useState<KeywordData[]>([]);
   const [trafficData, setTrafficData] = useState<TrafficData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,15 +17,38 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      const [fetchedStats, keywords, traffic] = await Promise.all([
-        api.getDashboardStats(),
-        api.getKeywordData(),
-        api.getTrafficData()
-      ]);
-      setStats(fetchedStats);
-      setKeywordData(keywords);
-      setTrafficData(traffic);
-      setIsLoading(false);
+      try {
+        const fetchedStats = await api.getDashboardStats();
+        setStats({
+          total_questions: fetchedStats.total_questions || 0,
+          pending_questions: fetchedStats.pending_questions || 0,
+          total_students: fetchedStats.total_students || 0
+        });
+
+        const fetchedKeywords = fetchedStats.most_searched_words || [];
+        const fallbackKeywords = [
+          { name: "kayıt", value: 45 },
+          { name: "burs", value: 30 },
+          { name: "yurt", value: 15 },
+          { name: "yemekhane", value: 10 }
+        ];
+
+        const mappedKeywords = fetchedKeywords.length > 0 
+          ? fetchedKeywords.map((kw: any) => ({ name: kw.word, value: kw.count }))
+          : fallbackKeywords;
+          
+        setKeywordData(mappedKeywords);
+
+        const mappedTraffic = (fetchedStats.weekly_traffic || []).map((tr: any, idx: number) => ({
+          day: `${idx + 1}. Gün`,
+          questions: tr.count
+        }));
+        setTrafficData(mappedTraffic);
+      } catch (error) {
+        console.error("Dashboard verileri çekilemedi:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -59,7 +82,7 @@ export default function AdminDashboard() {
           </div>
           <div className="relative z-10">
             <p className="text-dpu-textMuted text-sm font-black mb-2 uppercase tracking-widest">TOPLAM SORU</p>
-            <h3 className="text-5xl font-black text-dpu-green">{stats.totalQuestions}</h3>
+            <h3 className="text-5xl font-black text-dpu-green">{stats.total_questions}</h3>
           </div>
         </div>
         
@@ -69,7 +92,7 @@ export default function AdminDashboard() {
           </div>
           <div className="relative z-10">
             <p className="text-dpu-textMuted text-sm font-black mb-2 uppercase tracking-widest">BEKLEYENLER</p>
-            <h3 className="text-5xl font-black text-amber-500">{stats.pendingQuestions}</h3>
+            <h3 className="text-5xl font-black text-amber-500">{stats.pending_questions}</h3>
           </div>
         </div>
 
@@ -79,7 +102,7 @@ export default function AdminDashboard() {
           </div>
           <div className="relative z-10">
             <p className="text-dpu-textMuted text-sm font-black mb-2 uppercase tracking-widest">ÖĞRENCİLER</p>
-            <h3 className="text-5xl font-black text-blue-500">{stats.totalStudents}</h3>
+            <h3 className="text-5xl font-black text-blue-500">{stats.total_students}</h3>
           </div>
         </div>
       </div>
