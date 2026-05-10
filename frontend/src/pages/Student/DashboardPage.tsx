@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
-import { Search, ChevronDown, ChevronUp, Heart, Bookmark, Info, Send, TreePine, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Info, Send, TreePine } from 'lucide-react';
 import { StudentLayout } from '../../components/layout/StudentLayout';
 
 import { api } from '../../services/api';
 import type { Category, Question } from '../../types';
-import { Button } from '../../components/ui/Button';
+
 
 export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [categoryQuestions, setCategoryQuestions] = useState<Record<string, Question[]>>({});
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [userName, setUserName] = useState('Öğrenci');
+  const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -23,10 +26,30 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const cats = await api.getCategories();
-      setCategories(cats);
+      try {
+        const cats = await api.getCategories();
+        setCategories(cats);
+        try {
+          const counts = await api.getCategoryCounts();
+          setCategoryCounts(counts);
+        } catch (err) {
+          console.error("Sayılar yüklenemedi", err);
+        }
+      } catch(e) {}
     };
-    fetchCategories();
+    const fetchUser = async () => {
+      try {
+        const user = await api.getUserProfile();
+        setUserName(user.full_name || user.email || 'Öğrenci');
+      } catch (e) {}
+    };
+    
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchCategories(), fetchUser()]);
+      setIsLoading(false);
+    };
+    init();
   }, []);
 
   const handleCategoryClick = async (categoryId: string) => {
@@ -55,17 +78,14 @@ export default function DashboardPage() {
     }
   };
 
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults({ type: null, data: [] });
-  };
+
 
   const handleAskQuestion = async () => {
     if (!newQuestionText.trim()) return;
     setIsSubmitting(true);
     setSubmitMessage(null);
     
-    const result = await api.askQuestion(newQuestionText, 'current-user-id', 'Öğrenci');
+    const result = await api.askQuestion(newQuestionText);
     setIsSubmitting(false);
     
     if (result.success) {
@@ -78,7 +98,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <StudentLayout userName="Ahmet Yılmaz">
+    <StudentLayout userName={userName}>
       <div className="relative pt-12 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden -mx-4 sm:-mx-6 lg:-mx-8 mb-12 -mt-12 bg-gradient-to-b from-dpu-navy to-dpu-bg">
         {/* Aesthetic Watermark Emblem */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 opacity-[0.08] transform rotate-6 scale-[3] blur-[2px]">
@@ -144,7 +164,11 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* LEFT COLUMN: CATEGORIES & QUESTIONS */}
           <div className="lg:col-span-8 order-2 lg:order-1">
-            {!searchQuery && (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-24">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-dpu-green"></div>
+              </div>
+            ) : !searchQuery ? (
               <div className="animate-fade-in space-y-6">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-black text-white uppercase tracking-wider">Sıkça Sorulan Sorular</h3>
@@ -161,7 +185,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-4">
                           <span className="font-bold text-xl text-white">{category.name}</span>
                           <span className="bg-dpu-green/10 text-dpu-green py-0.5 px-3 rounded-md text-xs font-black">
-                            {category.questionCount}
+                            {categoryCounts[category.id] !== undefined ? categoryCounts[category.id] : category.questionCount}
                           </span>
                         </div>
                         <div className="p-1 rounded-md bg-white/5">
@@ -193,7 +217,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* RIGHT COLUMN: ASK QUESTION */}

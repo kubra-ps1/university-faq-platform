@@ -61,6 +61,17 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
+class UserPasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Yeni şifre en az 6 karakter olmalıdır.")
+        return v
+
 class Token(BaseModel):
     access_token: str
     token_type:   str
@@ -105,6 +116,7 @@ class QuestionResponse(BaseModel):
     category_id:  Optional[int] = None
     created_at:   datetime
     answered_at:  Optional[datetime] = None
+    favorite_count: int = 0
 
     class Config:
         from_attributes = True
@@ -126,6 +138,35 @@ class QuestionAnswer(BaseModel):
 class QuestionReject(BaseModel):
     reason: Optional[str] = None
 
+
+class AdminQuestionOut(BaseModel):
+    id: int
+    question_text: str
+    answer_text: Optional[str] = None
+    student_name: Optional[str] = None
+    faculty: Optional[str] = None
+    department: Optional[str] = None
+    category: Optional[str] = None
+    date: datetime
+    answered_at: Optional[datetime] = None
+    status: str
+    ai_checked: bool
+    favorite_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class AdminFAQCreate(BaseModel):
+    question_text: str
+    answer_text: str
+    category_id: Optional[int] = None
+
+
+class AdminFAQUpdate(BaseModel):
+    question_text: Optional[str] = None
+    answer_text: Optional[str] = None
+    category_id: Optional[int] = None
 
 # ── SavedItem Schemas ─────────────────────────────────────────────────────────
 
@@ -178,8 +219,6 @@ class TrafficDay(BaseModel):
 class Stats(BaseModel):
     total_questions:     int
     pending_questions:   int
-    answered_questions:  int
-    rejected_questions:  int
     total_students:      int
     most_searched_words: List[WordCount]
     weekly_traffic:      List[TrafficDay]

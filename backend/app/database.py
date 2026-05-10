@@ -1,14 +1,17 @@
-# database.py  (kök dizin — backend/app/database.py ile aynı)
+# database.py  (backend/app/database.py)
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# backend/ kök dizinindeki .env dosyasını açıkça yükle
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://dpu_user:dpu_pass@db:5432/dpu_faq"
+    "postgresql://postgres:password123@localhost:5432/university_faq"
 )
 
 engine       = create_engine(DATABASE_URL, pool_pre_ping=True)

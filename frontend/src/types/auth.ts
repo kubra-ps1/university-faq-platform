@@ -25,6 +25,8 @@ export interface RegisterRequest {
     fullName: string;
     email: string;
     password: string;
+    faculty?: string;
+    department?: string;
 }
 
 

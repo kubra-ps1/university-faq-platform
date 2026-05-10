@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {register} from '../../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { TreePine, Sparkles } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 const FACULTY_DATA: Record<string, string[]> = {
@@ -96,8 +95,12 @@ export default function RegisterPage() {
 
 
     }
-  catch (err:any) {
-      setError(err.message)
+  catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Beklenmeyen bir hata oluştu.");
+      }
     }
     finally{
       setIsLoading(false)
@@ -225,6 +228,11 @@ export default function RegisterPage() {
             <span className="text-dpu-textMuted">Zaten hesabınız var mı?</span>{' '}
             <Link to="/auth/login" className="text-dpu-green font-bold hover:underline ml-1">
               Giriş Yapın
+            </Link>
+          </div>
+          <div className="mt-4 text-center">
+            <Link to="/" className="text-sm font-bold text-dpu-textMuted hover:text-dpu-green transition-colors">
+              &larr; Ana Sayfaya Dön
             </Link>
           </div>
         </div>

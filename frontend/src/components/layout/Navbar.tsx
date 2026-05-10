@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ userRole, userName }) => {
             </div>
             <div>
               <h1 className="font-black text-xl text-white tracking-tighter leading-tight group-hover:text-dpu-green transition-colors">DPÜ <span className="text-dpu-green">SSS</span></h1>
-              <p className="text-[10px] text-dpu-textMuted font-black uppercase tracking-widest">{userRole === 'admin' ? 'YÖNETİCİ' : 'ÖĞRENCİ'}</p>
+              {userRole === 'admin' && <p className="text-[10px] text-dpu-textMuted font-black uppercase tracking-widest">YÖNETİCİ</p>}
             </div>
           </div>
           

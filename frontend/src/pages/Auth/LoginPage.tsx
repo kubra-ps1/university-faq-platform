@@ -31,8 +31,12 @@ export default function LoginPage() {
         navigate('/public');
       }
     }
-    catch (err:any) {
-      setError(err.message)
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Giriş başarısız oldu.");
+      }
     }
     finally{
       setIsLoading(false);
@@ -47,7 +51,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-dpu-green rounded-2xl flex items-center justify-center text-white shadow-lg mx-auto mb-4">
             <BookOpen size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-dpu-navy mb-2">Hoş Geldiniz</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Hoş Geldiniz</h1>
           <p className="text-dpu-textMuted">DPÜ SSS Platformuna giriş yapın</p>
         </div>
 
@@ -112,6 +116,11 @@ export default function LoginPage() {
               </Link>
             </div>
           )}
+          <div className="mt-4 text-center">
+            <Link to="/" className="text-sm font-bold text-dpu-textMuted hover:text-dpu-green transition-colors">
+              &larr; Ana Sayfaya Dön
+            </Link>
+          </div>
         </Card>
       </div>
     </div>

@@ -15,19 +15,27 @@ export default function CategoriesPage() {
   const [categoryName, setCategoryName] = useState('');
 
   useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const cats = await api.getCategories();
+      setCategories(cats);
+      setIsLoading(false);
+    };
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    const cats = await api.getCategories();
-    setCategories(cats);
-    setIsLoading(false);
-  };
-
   const handleDelete = async (id: string) => {
     if (window.confirm('Bu kategoriyi silmek istediğinize emin misiniz? Altındaki sorular etkilenebilir.')) {
-      setCategories(categories.filter(c => c.id !== id));
+      setIsLoading(true);
+      try {
+        await api.deleteCategory(id);
+        const cats = await api.getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error("Kategori silinirken hata:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -45,13 +53,21 @@ export default function CategoriesPage() {
 
   const handleSubmit = async () => {
     if (!categoryName.trim()) return;
-    if (editingCategory) {
-      setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, name: categoryName } : c));
-    } else {
-      const newCat: Category = { id: Date.now().toString(), name: categoryName, questionCount: 0 };
-      setCategories([...categories, newCat]);
+    setIsLoading(true);
+    try {
+      if (editingCategory) {
+        await api.updateCategory(editingCategory.id, categoryName);
+      } else {
+        await api.addCategory(categoryName);
+      }
+      const cats = await api.getCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error("Kategori kaydedilirken hata:", error);
+    } finally {
+      setIsLoading(false);
+      setIsModalOpen(false);
     }
-    setIsModalOpen(false);
   };
 
   return (
