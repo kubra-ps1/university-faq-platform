@@ -1,17 +1,70 @@
 # routers/questions.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from .. import models, schemas, auth as auth_utils
 from ..database import get_db
+from .. import ai_service
 
 router = APIRouter(prefix="/api", tags=["Student"])
+
 
 # ── Arama ─────────────────────────────────────────────────────────────────────
 
 @router.get("/faq/search", tags=["Public"])
+def search_faq(
+    q: str = Query(..., min_length=2, description="Arama sorgusu"),
+    db: Session = Depends(get_db),
+):
+    """
+    AI destekli semantik arama.
 
-@router.get("/faq/search/public", tags=["Public"])
+    Senaryo 1 → Cevaplanmış SSS ile yüksek eşleşme: direkt cevap döner.
+    Senaryo 2 → Bekleyen (pending) benzer soru var: "Bunu mu demek istediniz?" + Kaydet önerisi.
+    Senaryo 3 → Hiç eşleşme yok: soru sor yönlendirmesi.
+    """
+    # Tüm aktif soruları çek (SSS + pending) — rejected hariç
+    all_questions = (
+        db.query(models.Question)
+        .filter(models.Question.status != models.QuestionStatus.rejected)
+        .order_by(models.Question.created_at.desc())
+        .limit(200)  # token tasarrufu için
+        .all()
+    )
+
+    questions_payload = [
+        {
+            "id":            q.id,
+            "question_text": q.question_text,
+            "answer_text":   q.answer_text,
+            "status":        q.status.value,
+        }
+        for q in all_questions
+    ]
+
+    result = ai_service.semantic_search(q, questions_payload)
+
+    # Eşleşen soruları tam model nesnelerine dönüştür
+    matched_ids = {item["id"] for item in result["data"]}
+    matched_questions = [qq for qq in all_questions if qq.id in matched_ids]
+
+    return {
+        "scenario": result["scenario"],
+        "type":     result["type"],
+        "query":    q,
+        "data":     [
+            {
+                "id":            mq.id,
+                "question_text": mq.question_text,
+                "answer_text":   mq.answer_text,
+                "status":        mq.status.value,
+                "category":      mq.category.name if mq.category else None,
+                "favorite_count": len(mq.saved_by),
+            }
+            for mq in matched_questions
+        ],
+    }
+
 
 @router.get("/faq/all", tags=["Public"])
 def get_all_faq(db: Session = Depends(get_db)):
@@ -33,24 +86,56 @@ def get_all_faq(db: Session = Depends(get_db)):
 # ── Öğrenci Soru İşlemleri ────────────────────────────────────────────────────
 
 @router.post("/questions", response_model=schemas.QuestionDetail)
-def ask_question(
+async def ask_question(
     question: schemas.QuestionCreate,
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-
+    """
+    Öğrenci soru gönderir.
+    Soru anında AI moderasyonundan geçer (Küfür/Hakaret engellenir).
+    Uygunsa havuza (pending) eklenir.
+    """
     existing = db.query(models.Question).filter(
         models.Question.question_text == question.question_text
     ).first()
     if existing:
         return existing
 
+    # ── AI Moderasyon (Anlık - Bekletir ama anında sonuç döner) ──
+    moderation = await ai_service.moderate_question(question.question_text)
+
+    if not moderation["isAppropriate"]:
+        # Uygunsuzsa reddet ve exception fırlat
+        rejected_q = models.Question(
+            user_id=current_user.id,
+            question_text=question.question_text,
+            category_id=question.category_id,
+            status=models.QuestionStatus.rejected,
+            ai_checked=True,
+            ai_reject_reason=moderation.get("reason"),
+        )
+        db.add(rejected_q)
+        db.flush()
+        db.add(models.AILog(
+            question_id=rejected_q.id,
+            action=models.AIAction.rejected,
+            confidence=1.0,
+            reason=moderation.get("reason"),
+        ))
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=moderation.get("reason") or "Sorunuz güvenlik politikasına uymadığı için gönderilemedi."
+        )
+
+    # Yeni soruyu kaydet
     new_q = models.Question(
         user_id=current_user.id,
         question_text=question.question_text,
         category_id=question.category_id,
         status=models.QuestionStatus.pending,
-        ai_checked=True,
+        ai_checked=True, 
     )
     db.add(new_q)
     db.flush()
@@ -63,6 +148,10 @@ def ask_question(
     ))
     db.commit()
     db.refresh(new_q)
+
+    # ChromaDB'ye ekle
+    ai_service.upsert_question(new_q.id, new_q.question_text, new_q.status.value)
+
     return new_q
 
 
@@ -96,6 +185,10 @@ def delete_question(
 
     db.delete(q)
     db.commit()
+    
+    # ChromaDB'den de sil
+    ai_service.delete_question_from_db(question_id)
+    
     return {"message": "Soru silindi.", "id": question_id}
 
 

@@ -1,16 +1,18 @@
 # routers/admin.py
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import models, schemas, auth as auth_utils
 from ..database import get_db
+from .. import ai_service
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
 
 @router.get("/stats", response_model=schemas.Stats)
 def get_stats(
+    min_favorites: int = Query(2, description="Minimum favori sayısı"),
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
@@ -20,11 +22,11 @@ def get_stats(
     total_q    = db.query(models.Question).count()
     total_s    = db.query(models.User).filter(models.User.role == "student").count()
 
-    # Favori sayısı en az 10 olan, cevaplanmayı bekleyen sorular
+    # Favori sayısı en az min_favorites olan, cevaplanmayı bekleyen sorular
     subq = (
         db.query(models.SavedItem.question_id)
         .group_by(models.SavedItem.question_id)
-        .having(func.count(models.SavedItem.id) >= 10)
+        .having(func.count(models.SavedItem.id) >= min_favorites)
         .subquery()
     )
     pending_q = (
@@ -67,6 +69,7 @@ def get_stats(
 
 @router.get("/pending", response_model=list[schemas.AdminQuestionOut])
 def get_admin_pending(
+    min_favorites: int = Query(2, description="Minimum favori sayısı"),
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
@@ -76,7 +79,7 @@ def get_admin_pending(
     subq = (
         db.query(models.SavedItem.question_id)
         .group_by(models.SavedItem.question_id)
-        .having(func.count(models.SavedItem.id) >= 10)
+        .having(func.count(models.SavedItem.id) >= min_favorites)
         .subquery()
     )
 
@@ -126,8 +129,21 @@ def answer_question(
     q.answer_text = answer.answer_text
     q.status      = _m.QuestionStatus.answered
     q.answered_at = datetime.now(timezone.utc)
+
+    # Admin'in normalize ettiği soru metnini kaydet
+    if answer.normalized_text and answer.normalized_text.strip():
+        q.question_text = answer.normalized_text.strip()
+
+    # Admin'in seçtiği kategoriyi kaydet
+    if answer.category_id is not None:
+        q.category_id = answer.category_id
+
     db.commit()
     db.refresh(q)
+    
+    # ChromaDB'ye normalize metni indexle
+    ai_service.upsert_question(q.id, q.question_text, q.status.value)
+    
     return q
 
 
@@ -149,6 +165,10 @@ def reject_question(
     q.ai_reject_reason = body.reason
     db.commit()
     db.refresh(q)
+    
+    # Reddedilen soruyu arama havuzundan (ChromaDB) çıkar
+    ai_service.delete_question_from_db(question_id)
+    
     return q
 
 
@@ -249,6 +269,9 @@ def create_admin_faq(
     db.add(new_q)
     db.commit()
     db.refresh(new_q)
+    
+    ai_service.upsert_question(new_q.id, new_q.question_text, new_q.status.value)
+    
     return new_q
 
 
@@ -277,6 +300,9 @@ def update_admin_question(
 
     db.commit()
     db.refresh(q)
+    
+    ai_service.upsert_question(q.id, q.question_text, q.status.value)
+    
     return q
 
 
@@ -294,6 +320,9 @@ def delete_admin_question(
 
     db.delete(q)
     db.commit()
+    
+    ai_service.delete_question_from_db(question_id)
+    
     return {"message": "Soru başarıyla silindi.", "id": question_id}
 
 
@@ -308,3 +337,41 @@ def get_ai_logs(
     return db.query(models.AILog).order_by(
         models.AILog.processed_at.desc()
     ).offset(skip).limit(limit).all()
+
+
+@router.get("/ai/prepare/{question_id}")
+async def prepare_question_for_admin(
+    question_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(auth_utils.require_admin),
+):
+    """
+    Admin "Cevapla" butonuna bastığında çağrılır.
+    Gemini'den normalize edilmiş soru metni + kategori önerisi alır.
+    Admin her iki alanı da düzenleyebilir.
+    """
+    q = db.query(models.Question).filter(models.Question.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Soru bulunamadı.")
+
+    # Mevcut kategorileri çek
+    categories = db.query(models.Category).all()
+    category_names = [c.name for c in categories]
+    category_map   = {c.name: c.id for c in categories}
+
+    # Gemini'ye gönder (Asenkron)
+    result = await ai_service.prepare_for_admin(q.question_text, category_names)
+
+    # Önerilen kategorinin ID'sini bul
+    suggested_name = result["suggestedCategory"]
+    suggested_id   = category_map.get(suggested_name)
+
+    return {
+        "question_id":         question_id,
+        "original_text":       q.question_text,
+        "normalizedQuestion":  result["normalizedQuestion"],
+        "suggestedCategory":   suggested_name,
+        "suggestedCategoryId": suggested_id,
+        "isNewCategory":       result.get("isNewCategory", False),
+        "confidence":          result["confidence"],
+    }

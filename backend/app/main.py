@@ -12,6 +12,8 @@ from .routers import admin as admin_router
 from .seed import run_seed
 
 
+
+
 # ── Uygulama Başlatma ─────────────────────────────────────────────────────────
 
 app = FastAPI(
