@@ -15,12 +15,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: faq_backend
     volumes:
       - ./backend:/app
+      - chroma_data:/app/chroma_db
     ports:
       - "8000:8000"
     environment:
@@ -46,3 +47,4 @@ services:
 
 volumes:
   postgres_data:
+  chroma_data:

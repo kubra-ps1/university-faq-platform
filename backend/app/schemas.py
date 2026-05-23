@@ -132,7 +132,9 @@ class QuestionDetail(QuestionResponse):
 
 
 class QuestionAnswer(BaseModel):
-    answer_text: str
+    answer_text:      str
+    category_id:      Optional[int] = None   # admin'in seçtiği/değiştirdiği kategori
+    normalized_text:  Optional[str] = None   # AI + admin'in normalize ettiği soru metni
 
 
 class QuestionReject(BaseModel):

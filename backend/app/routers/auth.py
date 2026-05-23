@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from datetime import datetime, timezone
 
@@ -9,6 +10,7 @@ from .. import models, schemas, auth as auth_utils
 from ..database import get_db
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
 
 
 @router.post("/register", response_model=schemas.Token)
@@ -103,6 +105,41 @@ def change_password(
     return {"message": "Şifreniz başarıyla güncellendi."}
 
 
-@router.post("/user")
-def get_user():
-    pass
+class UserIdRequest(BaseModel):
+    user_id: int
+
+@router.post("/user", response_model=schemas.UserOut)
+def get_user_by_id(
+    request: UserIdRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_utils.get_current_user)
+):
+    """Verilen ID'ye sahip kullanıcıyı döndürür."""
+    user = db.query(models.User).filter(models.User.id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+    return user
+
+@router.post("/users/all", response_model=list[schemas.UserOut])
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user=Depends(auth_utils.get_current_user)
+):
+    """Sistemdeki tüm kullanıcıları döndürür."""
+    users = db.query(models.User).all()
+    return users
+
+@router.delete("/user/{user_id}")
+def delete_user_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(auth_utils.require_admin)
+):
+    """(Sadece Admin) Verilen ID'ye sahip kullanıcıyı siler."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+    
+    db.delete(user)
+    db.commit()
+    return {"message": f"Kullanıcı (ID: {user_id}) başarıyla silindi."}
