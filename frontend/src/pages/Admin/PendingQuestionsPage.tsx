@@ -17,6 +17,10 @@ export default function PendingQuestionsPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [normalizedQuestionText, setNormalizedQuestionText] = useState('');
 
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [isNewCategorySuggested, setIsNewCategorySuggested] = useState(false);
+  const [suggestedCategoryName, setSuggestedCategoryName] = useState('');
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newQuestionText, setNewQuestionText] = useState('');
 
@@ -34,7 +38,7 @@ export default function PendingQuestionsPage() {
     fetchData();
   }, []);
 
-  const openAnswerModal = (q: Question) => {
+  const openAnswerModal = async (q: Question) => {
     setSelectedQuestion(q);
     setNormalizedQuestionText(
       q.text.charAt(0).toUpperCase() + q.text.slice(1).toLowerCase().replace('?', '') + '?'
@@ -44,11 +48,45 @@ export default function PendingQuestionsPage() {
     }
     setAnswerText('');
     setIsAnswerModalOpen(true);
+    setIsPreparing(true);
+    setIsNewCategorySuggested(false);
+    setSuggestedCategoryName('');
+
+    try {
+      const prep = await api.prepareQuestionForAdmin(q.id);
+      if (prep.normalizedQuestion) {
+        setNormalizedQuestionText(prep.normalizedQuestion);
+      }
+      if (prep.isNewCategory) {
+        setIsNewCategorySuggested(true);
+        setSuggestedCategoryName(prep.suggestedCategory);
+        setSelectedCategory('new_category');
+      } else if (prep.suggestedCategoryId) {
+        setSelectedCategory(String(prep.suggestedCategoryId));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsPreparing(false);
+    }
   };
 
   const handleAnswerSubmit = async () => {
     if (!selectedQuestion || !selectedCategory || !answerText.trim()) return;
-    await api.answerQuestion(selectedQuestion.id, answerText, selectedCategory);
+    
+    let finalCategoryId = selectedCategory;
+    if (selectedCategory === 'new_category' && suggestedCategoryName) {
+      try {
+        const newCat = await api.addCategory(suggestedCategoryName);
+        finalCategoryId = newCat.id;
+        setCategories(prev => [...prev, newCat]);
+      } catch (e) {
+        console.error("Yeni kategori oluşturulamadı", e);
+        return;
+      }
+    }
+
+    await api.answerQuestion(selectedQuestion.id, answerText, finalCategoryId, normalizedQuestionText);
     setQuestions(questions.filter(q => q.id !== selectedQuestion.id));
     setIsAnswerModalOpen(false);
   };
@@ -165,14 +203,23 @@ export default function PendingQuestionsPage() {
                   <Sparkles size={14} className="text-amber-400" /> Kategori
                 </label>
                 <select
-                  className="w-full px-4 py-3 bg-dpu-navy/50 border border-white/10 text-white rounded-xl focus:border-dpu-green/50 outline-none transition-all appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-dpu-navy/50 border border-white/10 text-white rounded-xl focus:border-dpu-green/50 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50"
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    if (e.target.value !== 'new_category') setIsNewCategorySuggested(false);
+                  }}
+                  disabled={isPreparing}
                 >
                   <option value="" disabled className="bg-dpu-navy">Kategori Seçin</option>
                   {categories.map(c => (
                     <option key={c.id} value={c.id} className="bg-dpu-navy">{c.name}</option>
                   ))}
+                  {isNewCategorySuggested && (
+                    <option value="new_category" className="bg-dpu-navy text-amber-400">
+                      + Yeni Kategori (AI): {suggestedCategoryName}
+                    </option>
+                  )}
                 </select>
               </div>
 

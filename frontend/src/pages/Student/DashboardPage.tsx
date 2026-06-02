@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { Search, ChevronDown, ChevronUp, Info, Send, TreePine } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Info, Send, TreePine, Heart, ShieldAlert, CheckCircle, X } from 'lucide-react';
 import { StudentLayout } from '../../components/layout/StudentLayout';
 
 import { api } from '../../services/api';
@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [userName, setUserName] = useState('Öğrenci');
   const [isLoading, setIsLoading] = useState(true);
+  const [savedQuestionIds, setSavedQuestionIds] = useState<Set<string>>(new Set());
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -22,7 +23,8 @@ export default function DashboardPage() {
 
   const [newQuestionText, setNewQuestionText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+  const [submitResult, setSubmitResult] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+  const [showResultCard, setShowResultCard] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -47,6 +49,10 @@ export default function DashboardPage() {
     const init = async () => {
       setIsLoading(true);
       await Promise.all([fetchCategories(), fetchUser()]);
+      try {
+        const interests = await api.getStudentInterests();
+        setSavedQuestionIds(new Set(interests.map(i => i.id)));
+      } catch (e) {}
       setIsLoading(false);
     };
     init();
@@ -68,7 +74,8 @@ export default function DashboardPage() {
     const query = e.target.value;
     setSearchQuery(query);
 
-    if (query.length > 2) {
+    const words = query.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length >= 3) {
       setIsSearching(true);
       const results = await api.searchQuestions(query);
       setSearchResults(results);
@@ -83,17 +90,43 @@ export default function DashboardPage() {
   const handleAskQuestion = async () => {
     if (!newQuestionText.trim()) return;
     setIsSubmitting(true);
-    setSubmitMessage(null);
+    setSubmitResult(null);
+    setShowResultCard(false);
     
     const result = await api.askQuestion(newQuestionText);
     setIsSubmitting(false);
     
     if (result.success) {
-      setSubmitMessage({ type: 'success', text: result.message });
+      setSubmitResult({ type: 'success', text: result.message });
+      setShowResultCard(true);
       setNewQuestionText('');
-      setTimeout(() => setSubmitMessage(null), 3000);
+      setTimeout(() => dismissResult(), 3000);
     } else {
-      setSubmitMessage({ type: 'error', text: result.message });
+      setSubmitResult({ type: 'error', text: result.message });
+      setShowResultCard(true);
+      setTimeout(() => dismissResult(), 4000);
+    }
+  };
+
+  const dismissResult = () => {
+    setShowResultCard(false);
+    setTimeout(() => setSubmitResult(null), 500);
+  };
+
+  const toggleSave = async (q: Question) => {
+    const isSaved = savedQuestionIds.has(q.id);
+    try {
+      if (isSaved) {
+        await api.removeInterest(q.id);
+        setSavedQuestionIds(prev => { const n = new Set(prev); n.delete(q.id); return n; });
+        setSearchResults(prev => ({...prev, data: prev.data.map(item => item.id === q.id ? {...item, favoriteCount: Math.max(0, (item.favoriteCount || 1) - 1)} : item)}));
+      } else {
+        await api.saveInterest(q.id);
+        setSavedQuestionIds(prev => { const n = new Set(prev); n.add(q.id); return n; });
+        setSearchResults(prev => ({...prev, data: prev.data.map(item => item.id === q.id ? {...item, favoriteCount: (item.favoriteCount || 0) + 1} : item)}));
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -149,10 +182,25 @@ export default function DashboardPage() {
             </div>
             
             {searchResults.data.map(q => (
-              <div key={q.id} className="glass-card p-6 border-l-4 border-l-dpu-green">
-                <h4 className="text-xl font-bold text-white mb-4">{q.text}</h4>
+              <div key={q.id} className="glass-card p-6 border-l-4 border-l-dpu-green relative">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <div className="inline-block px-3 py-1 rounded-md bg-dpu-green/10 text-dpu-green text-xs font-bold mb-3">
+                      {q.answer ? 'CEVAPLANDI' : 'HAVUZDA'}
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-2">{q.text}</h4>
+                  </div>
+                  <button 
+                    onClick={() => toggleSave(q)}
+                    className="flex flex-col items-center justify-center gap-1 text-dpu-textMuted hover:text-dpu-green transition-colors mt-1"
+                    title={savedQuestionIds.has(q.id) ? "Favorilerden Çıkar" : "Favorilere Ekle"}
+                  >
+                    <Heart size={24} className={savedQuestionIds.has(q.id) ? "fill-dpu-green text-dpu-green" : ""} />
+                    <span className="text-xs font-bold">{q.favoriteCount || 0}</span>
+                  </button>
+                </div>
                 {q.answer && (
-                  <div className="p-4 rounded-xl bg-dpu-navy/40 border border-white/5 text-dpu-text leading-relaxed">
+                  <div className="p-4 rounded-xl bg-dpu-navy/40 border border-white/5 text-dpu-text leading-relaxed mt-2">
                     {q.answer}
                   </div>
                 )}
@@ -228,20 +276,16 @@ export default function DashboardPage() {
               </div>
               <div className="glass-card p-6 border-t-4 border-t-dpu-green">
                 <p className="text-dpu-textMuted text-sm mb-4 font-medium">
-                  Merak ettiğin konuyu sor, AI ve admin ekibimiz en kısa sürede yanıtlasın.
+                  Merak ettiğin konuyu sor.
                 </p>
                 <textarea
                   className="w-full min-h-[150px] p-4 bg-dpu-navy/50 border border-white/10 rounded-xl text-white focus:border-dpu-green/50 outline-none transition-all resize-none mb-4 placeholder:text-dpu-textMuted/50"
                   placeholder="Sorunu buraya yaz..."
                   value={newQuestionText}
                   onChange={(e) => setNewQuestionText(e.target.value)}
+                  disabled={isSubmitting}
                 />
                 <div className="space-y-4">
-                  {submitMessage && (
-                    <div className={`p-3 rounded-lg text-xs font-bold ${submitMessage.type === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-dpu-green/10 text-dpu-green'}`}>
-                      {submitMessage.text}
-                    </div>
-                  )}
                   <button 
                     onClick={handleAskQuestion} 
                     disabled={isSubmitting || !newQuestionText.trim()}
@@ -263,6 +307,91 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      {/* ═══ FULL-SCREEN AI PROCESSING MODAL ═══ */}
+      {isSubmitting && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center ai-overlay-enter" style={{ pointerEvents: 'all' }}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="ai-spinner mb-8">
+              <svg className="ai-spinner-svg" viewBox="0 0 100 100">
+                <circle className="ai-spinner-track" cx="50" cy="50" r="42" />
+                <circle className="ai-spinner-progress" cx="50" cy="50" r="42" />
+              </svg>
+              <div className="ai-spinner-icon">
+                <ShieldAlert size={30} className="text-dpu-green" />
+              </div>
+            </div>
+            <p className="text-white font-bold text-xl mb-2 drop-shadow-lg">AI Kontrol Ediliyor</p>
+            <p className="text-dpu-textMuted text-sm animate-pulse">Sorunuz güvenlik kontrolünden geçiriliyor...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ FULL-SCREEN RESULT TOAST MODAL ═══ */}
+      {submitResult && (
+        <div 
+          className={`fixed inset-0 z-[9999] flex items-center justify-center ai-overlay-enter ${
+            !showResultCard ? 'pointer-events-none' : ''
+          }`}
+          onClick={dismissResult}
+          style={{ pointerEvents: showResultCard ? 'all' : 'none' }}
+        >
+          <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
+            showResultCard ? 'opacity-100' : 'opacity-0'
+          }`} />
+          <div className={`relative z-10 w-full max-w-md mx-4 result-card ${
+            showResultCard ? 'result-card-enter' : 'result-card-exit'
+          } ${
+            submitResult.type === 'error' ? 'result-card-error' : 'result-card-success'
+          }`} onClick={(e) => e.stopPropagation()}>
+            {/* Decorative top glow */}
+            <div className={`absolute -top-px left-1/2 -translate-x-1/2 w-3/4 h-px ${
+              submitResult.type === 'error'
+                ? 'bg-gradient-to-r from-transparent via-red-500/60 to-transparent'
+                : 'bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent'
+            }`} />
+            
+            <div className="flex flex-col items-center text-center py-4">
+              {/* Icon */}
+              <div className={`p-4 rounded-2xl mb-5 ${
+                submitResult.type === 'error'
+                  ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 shadow-[0_0_30px_rgba(239,68,68,0.15)]'
+                  : 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
+              }`}>
+                {submitResult.type === 'error'
+                  ? <ShieldAlert size={36} className="text-red-400" />
+                  : <CheckCircle size={36} className="text-emerald-400" />
+                }
+              </div>
+              
+              {/* Title */}
+              <h3 className={`text-lg font-black uppercase tracking-wider mb-2 ${
+                submitResult.type === 'error' ? 'text-red-400' : 'text-emerald-400'
+              }`}>
+                {submitResult.type === 'error' ? 'Soru Reddedildi' : 'Başarıyla Gönderildi!'}
+              </h3>
+              
+              {/* Message */}
+              <p className={`text-sm font-medium leading-relaxed max-w-xs ${
+                submitResult.type === 'error' ? 'text-red-300/80' : 'text-emerald-300/80'
+              }`}>
+                {submitResult.text}
+              </p>
+
+              {/* Auto-dismiss progress bar */}
+              <div className="w-full mt-6 h-1 rounded-full bg-white/5 overflow-hidden">
+                <div className={`h-full rounded-full ${
+                  submitResult.type === 'error'
+                    ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                } ${showResultCard ? 'result-progress-bar' : ''}`}
+                  style={{ animationDuration: submitResult.type === 'error' ? '4s' : '3s' }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </StudentLayout>
   );
 }

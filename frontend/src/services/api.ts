@@ -133,14 +133,9 @@ export const api = {
     return categoryData.questions.map(mapQuestion);
   },
   searchQuestions: async (q: string) => {
-    const res = await apiInstance.get('/faq/all');
-    const allQuestions = res.data.flatMap((c: any) => c.questions.map(mapQuestion));
-    const lowerQ = q.toLowerCase();
-    const filtered = allQuestions.filter((question: Question) => 
-      question.text.toLowerCase().includes(lowerQ) || 
-      (question.answer && question.answer.toLowerCase().includes(lowerQ))
-    );
-    return { type: 'exact' as const, data: filtered };
+    const res = await apiInstance.get(`/faq/search?q=${encodeURIComponent(q)}`);
+    const mappedData = res.data.data.map(mapQuestion);
+    return { type: res.data.type, data: mappedData };
   },
 
   // Admin Routes
@@ -156,8 +151,11 @@ export const api = {
     const res = await apiInstance.get('/admin/pool');
     return res.data.map(mapQuestion);
   },
-  answerQuestion: async (id: string, answerText: string, _categoryId?: string) => {
-    const res = await apiInstance.patch(`/admin/questions/${id}/answer`, { answer_text: answerText });
+  answerQuestion: async (id: string, answerText: string, categoryId?: string, normalizedText?: string) => {
+    const payload: any = { answer_text: answerText };
+    if (categoryId) payload.category_id = parseInt(categoryId, 10);
+    if (normalizedText) payload.normalized_text = normalizedText;
+    const res = await apiInstance.patch(`/admin/questions/${id}/answer`, payload);
     return mapQuestion(res.data);
   },
   rejectQuestion: async (id: string, reason?: string, _categoryId?: string) => {
@@ -185,6 +183,10 @@ export const api = {
     };
     const res = await apiInstance.put(`/admin/questions/${id}`, payload);
     return mapQuestion(res.data);
+  },
+  prepareQuestionForAdmin: async (id: string) => {
+    const res = await apiInstance.get(`/admin/ai/prepare/${id}`);
+    return res.data;
   },
   
   // Category Admin Methods
@@ -216,12 +218,24 @@ export const api = {
     return res.data.map(mapQuestion);
   },
   askQuestion: async (text: string, categoryId?: string) => {
-    const payload = {
-      question_text: text,
-      ...(categoryId ? { category_id: parseInt(categoryId, 10) } : {})
-    };
-    const res = await apiInstance.post('/questions', payload);
-    return { success: true, message: 'Sorunuz başarıyla gönderildi.', data: mapQuestion(res.data) };
+    try {
+      const payload = {
+        question_text: text,
+        ...(categoryId ? { category_id: parseInt(categoryId, 10) } : {})
+      };
+      const res = await apiInstance.post('/questions', payload);
+      return { success: true, message: 'Sorunuz başarıyla gönderildi ve havuza eklendi! 🎉', data: mapQuestion(res.data) };
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: { detail?: string } } };
+      if (err.response?.status === 400) {
+        return { 
+          success: false, 
+          message: err.response.data?.detail || 'Sorunuz güvenlik politikasına uymadığı için gönderilemedi.',
+          rejected: true
+        };
+      }
+      return { success: false, message: 'Bir hata oluştu. Lütfen tekrar deneyin.' };
+    }
   },
   deleteMyQuestion: async (id: string) => {
     await apiInstance.delete(`/questions/${id}`);
@@ -237,6 +251,9 @@ export const api = {
       const d = item as { question?: unknown };
       return mapQuestion(d.question || item);
     });
+  },
+  saveInterest: async (id: string) => {
+    await apiInstance.post(`/saved-items/${id}`);
   },
   removeInterest: async (id: string) => {
     await apiInstance.delete(`/saved-items/${id}`);
