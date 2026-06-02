@@ -66,12 +66,22 @@ async def moderate_question(question_text: str) -> dict[str, Any]:
         logger.warning("GEMINI_API_KEY bulunamadı, moderasyon atlanıyor.")
         return {"isAppropriate": True, "reason": None}
 
+    # Yerel Kara Liste Kontrolü (Yapay Zeka Bazen Esnek Davranabiliyor)
+    blacklist = ["salak", "aptal", "saçma", "amk", "aq", "pedofili", "siyaset", "parti", "boş iş", "gerizekalı"]
+    lower_q = question_text.lower()
+    if any(word in lower_q for word in blacklist):
+        return {"isAppropriate": False, "reason": "İçerik güvenlik politikalarımıza uymadığı için engellendi (Uygunsuz İfade)."}
+
     prompt = (
-        f"Aşağıdaki soruyu bir üniversite SSS platformu içerik politikalarına göre denetle: '{question_text}'.\n\n"
-        "KURALLAR:\n"
-        "1. İçerikte KESİNLİKLE küfür, argo, hakaret, aşağılayıcı dil, nefret söylemi, spam veya kişisel veri ihlali varsa 'isAppropriate: false' döndür ve 'reason' alanına Türkçe olarak 'İçerik güvenlik politikalarımıza uymadığı için engellendi (Küfür/Hakaret vb.).' yaz.\n"
-        "2. Üniversite ortamına uygun olmayan her türlü absürt veya anlamsız (asdadasd gibi) soruyu reddet.\n"
-        "3. Kategori ataması YAPMA."
+        f"Sen bir üniversitenin resmi SSS (Sıkça Sorulan Sorular) platformu için çok katı bir içerik moderatörüsün. Görevin, öğrencinin metnini sadece kelime bazında değil; bağlam, üslup ve niyet açısından analiz etmektir.\n\n"
+        f"Öğrencinin metni: '{question_text}'\n\n"
+        "Aşağıdaki durumlardan HERHANGİ BİRİ geçerliyse metni KESİNLİKLE REDDET (isAppropriate: false):\n"
+        "1. LAUBALİ VE RESMİ OLMAYAN ÜSLUP: Kelime bazında küfür olmasa bile; ciddiyetsiz, lakayt, saygısız, alaycı, kaba veya kurumsal bir ortama uymayan ('boş iş', 'salak', 'saçma' gibi imalar taşıyan) her türlü soru.\n"
+        "2. ETİK VE AHLAK DIŞI BAĞLAM: Kelimeler doğrudan geçmese bile; ima yoluyla cinsellik, pedofili, yasadışı eylem, şiddet, zorbalık veya ahlaka aykırı herhangi bir durum barındıran örtülü veya açık mesajlar.\n"
+        "3. SİYASİ İÇERİK: Direkt siyasi isim geçmese bile; herhangi bir ideolojik tartışmaya, hükumet/muhalefet eleştirisine veya politik kutuplaşmaya yol açabilecek içerikler.\n"
+        "4. KÜFÜR VE HAKARET: Doğrudan veya gizlenmiş (argo/harf oyunları ile) kurumları, kişileri aşağılayan ifadeler.\n"
+        "5. TROLLEME: 'asdasdas' gibi anlamsız, spam veya platformu meşgul etme amaçlı sorular.\n\n"
+        "ÖNEMLİ KURAL: Öğrencinin sorusu SADECE VE SADECE temiz, ahlaklı, üniversite ile ilgili, resmi ve saygılı bir bilgi alma amacı taşıyorsa 'isAppropriate: true' yap. Aksi en ufak bir şüphede (laubalilik veya ahlaki uygunsuzluk sezdiğinde) KESİNLİKLE reddet ve 'reason' alanına 'Sorunuz kurumsal ciddiyete, etik kurallara veya içerik politikamıza uymadığı için reddedilmiştir.' yaz."
     )
 
     try:
@@ -93,12 +103,12 @@ async def moderate_question(question_text: str) -> dict[str, Any]:
             logger.warning("Gemini Safety Block tetiklendi.")
             return {"isAppropriate": False, "reason": "İçerik güvenlik politikalarımıza uymadığı için engellendi (Küfür/Argo tespit edildi)."}
         if "429" in err_str or "resource_exhausted" in err_str or "too many requests" in err_str or "quota" in err_str:
-            logger.warning("Gemini API kota limiti doldu (429). Moderasyon atlanıyor, soru onaylı sayılıyor.")
-            return {"isAppropriate": True, "reason": None}
+            logger.warning("Gemini API kota limiti doldu (429). Güvenlik nedeniyle reddedildi.")
+            return {"isAppropriate": False, "reason": "AI sistemi şu an meşgul. Lütfen biraz sonra tekrar deneyiniz."}
         logger.error("Moderasyon API hatası: %s", exc)
 
     # Geçici ağ hatası vb. durumlarda sistemi kitlememek için onaylı sayılır
-    return {"isAppropriate": True, "reason": None}
+    return {"isAppropriate": False, "reason": "AI sistemi şu an geçici bir hata yaşıyor. Lütfen tekrar deneyiniz."}
 
 
 # ── 2. Admin Normalize + Kategori Önerisi ───────────────────────────────────
@@ -123,14 +133,14 @@ async def prepare_for_admin(raw_text: str, available_categories: list[str]) -> d
         return fallback_response
 
     prompt = (
-        "Sen bir Üniversite SSS platformu içerik yöneticisisin. Aşağıdaki görevleri yap.\n"
+        "Sen bir Üniversite SSS platformu içerik yöneticisisin. Aşağıdaki görevleri DİKKATLİCE yap.\n"
         f"Ham soru: '{raw_text}'\n"
         f"Mevcut kategoriler: {cats_str}\n\n"
-        "GÖREV 1 - normalizedQuestion: Ham soruyu yazım hatalarını düzelterek, profesyonel ve resmi SSS formatına çevir. Kesinlikle ham halini bırakma. (Örn: 'yatay geçiş nası yapılıyo' -> 'Yatay geçiş başvuruları nasıl yapılır?')\n"
+        "GÖREV 1 - normalizedQuestion: DİKKAT: Cümledeki BÜTÜN yazım yanlışlarını (girmk -> girmek, basvuri -> başvuru vb.) düzelt. Sadece soru işareti ekleyip bırakma. Tamamen Türkçe dilbilgisine uygun, çok resmi ve kurumsal bir SSS formatına çevir. (Örn: 'yatay geçiş nası yapılıyo' -> 'Yatay geçiş başvuruları nasıl yapılır?')\n"
         "GÖREV 2 - suggestedCategory: Mevcut kategorilerden en uygunu varsa o kategorinin birebir aynı ismini yaz. Hiçbiri uymuyorsa 1-2 kelimelik yeni bir kategori ismi türet.\n"
         "GÖREV 3 - isNewCategory: SADECE yeni kategori türettiysen true, mevcut kategorilerden birini seçtiysen false.\n"
         "GÖREV 4 - confidence: Kategoriye güvenin 0.0-1.0 arası bir sayı olarak.\n"
-        "Taslak cevap üretme."
+        "SADECE JSON FORMATINDA CEVAP VER."
     )
 
     try:

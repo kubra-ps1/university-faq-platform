@@ -61,7 +61,8 @@ export default function HomePage() {
     const query = e.target.value;
     setSearchQuery(query);
 
-    if (query.length > 2) {
+    const words = query.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length >= 3) {
       setIsSearching(true);
       const results = await api.searchQuestions(query);
       setSearchResults(results);
@@ -100,7 +101,7 @@ export default function HomePage() {
             
             <h1 className="text-5xl md:text-7xl font-black mb-8 leading-tight tracking-tight text-white drop-shadow-2xl">
               Aradığın Cevap <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-dpu-green to-dpu-light">Karanlıkta Parlasın.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-dpu-green to-dpu-light">DPÜ Hakkında Her Şey.</span>
             </h1>
             
             <p className="text-xl text-dpu-textMuted max-w-2xl mx-auto mb-12 font-medium leading-relaxed">

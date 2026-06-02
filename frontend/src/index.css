@@ -63,3 +63,161 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-dpu-green/20 rounded-full hover:bg-dpu-green/40 transition-colors;
 }
+
+/* ── AI Circular Spinner ───────────────────────────────── */
+.ai-spinner {
+  position: relative;
+  width: 110px;
+  height: 110px;
+}
+
+.ai-spinner-svg {
+  width: 100%;
+  height: 100%;
+  animation: ai-rotate 2s linear infinite;
+}
+
+.ai-spinner-track {
+  fill: none;
+  stroke: rgba(0, 237, 100, 0.1);
+  stroke-width: 5;
+}
+
+.ai-spinner-progress {
+  fill: none;
+  stroke: url(#spinner-gradient);
+  stroke: #00ED64;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 264;
+  stroke-dashoffset: 66;
+  animation: ai-dash 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(0, 237, 100, 0.5));
+}
+
+.ai-spinner-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ai-pulse-icon 2s ease-in-out infinite;
+}
+
+@keyframes ai-rotate {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ai-dash {
+  0% {
+    stroke-dashoffset: 264;
+  }
+  50% {
+    stroke-dashoffset: 66;
+  }
+  100% {
+    stroke-dashoffset: 264;
+  }
+}
+
+@keyframes ai-pulse-icon {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+/* ── AI Overlay Entrance ──────────────────────────────── */
+.ai-overlay-enter {
+  animation: overlayFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* ── Result Cards ─────────────────────────────────────── */
+.result-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.result-card-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(249, 115, 22, 0.05) 100%);
+  border-color: rgba(239, 68, 68, 0.2);
+  box-shadow: 0 4px 24px rgba(239, 68, 68, 0.1), inset 0 1px 0 rgba(239, 68, 68, 0.1);
+}
+
+.result-card-error::before {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(249, 115, 22, 0.2));
+}
+
+.result-card-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(20, 184, 166, 0.05) 100%);
+  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 24px rgba(16, 185, 129, 0.1), inset 0 1px 0 rgba(16, 185, 129, 0.1);
+}
+
+.result-card-success::before {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(20, 184, 166, 0.2));
+}
+
+.result-card-enter {
+  animation: resultSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.result-card-exit {
+  animation: resultSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes resultSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes resultSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+/* ── Auto-dismiss progress bar ────────────────────────── */
+.result-progress-bar {
+  animation: progressShrink 3s linear forwards;
+}
+
+@keyframes progressShrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}

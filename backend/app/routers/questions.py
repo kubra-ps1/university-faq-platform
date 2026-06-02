@@ -100,6 +100,11 @@ async def ask_question(
         models.Question.question_text == question.question_text
     ).first()
     if existing:
+        if existing.status == models.QuestionStatus.rejected:
+            raise HTTPException(
+                status_code=400,
+                detail=existing.ai_reject_reason or "Bu soru daha önce güvenlik politikasına uymadığı için reddedilmiş."
+            )
         return existing
 
     # ── AI Moderasyon (Anlık - Bekletir ama anında sonuç döner) ──

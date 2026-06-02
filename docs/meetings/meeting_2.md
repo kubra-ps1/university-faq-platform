@@ -1,34 +1,18 @@
-# 2. Toplantı Kararları: Frontend Mimari ve Tasarım Süreci
+# Toplantı Tutanağı - 2: Frontend Arayüz ve Kimlik Doğrulama (Auth)
 
-**Gündem:** Akıllı SSS Platformu - Arayüz (Frontend) Tasarım Kararları ve Modüler Yapılandırma
+**Tarih:** 25 Nisan 2026  
+**Katılımcılar:** Kübra, Zeynep, Raghad  
+**Konu:** Initial Frontend UI, Login/Register Entegrasyonları ve JWT Yönetimi
 
-## 1. Altyapı ve Teknolojik Kararlar
-Bir önceki mimari değerlendirmemizde netleştirdiğimiz üzere, projenin frontend katmanı aşağıdaki standartlar üzerine inşa edilecektir:
-* **Çatı (Framework):** React (Vite ortamında yapılandırıldı).
-* **Dil:** TypeScript. Veri tipleri katı bir şekilde tanımlanacak, "any" kullanımı kod incelemelerinde (Code Review) reddedilecektir.
-* **Stil Yönetimi:** Tailwind CSS kullanılacak.
-* **Yönlendirme (Routing):** Single Page Application (SPA) davranışı için sayfa geçişleri `react-router-dom` ile yönetilecektir.
+## Gündem Maddeleri
+1. **Frontend UI:** Sayfaların (Dashboard, Login vb.) tasarımlarının yapılması.
+2. **Kimlik Doğrulama:** JWT token ile login ve register işlemlerinin sisteme bağlanması.
 
-## 2. Sayfa Hiyerarşisi ve Klasörleme
-"Spaghetti code" oluşumunu engellemek amacıyla arayüz 12 bağımsız sayfa (Component) halinde, 4 ana Domain altında klasörlenecektir:
+## Toplantı Notları ve Alınan Kararlar
+1. **Arayüz (UI) Tasarımı:** Ana sayfa, giriş yapma (Login) ve kayıt olma (Register) ekranlarının tasarımlarının tamamlandığı ve sisteme entegre edildiği bildirilmiştir.
+2. **Kimlik Doğrulama (JWT):** JWT (JSON Web Token) altyapısının istemci tarafında (Local Storage) yönetimi için gerekli mekanizmaların kurulduğu belirtilmiştir.
+3. **Güvenlik ve Yönlendirme:** Geçerliliğini yitirmiş (expire olmuş) veya hatalı token durumlarında kullanıcıların otomatik olarak giriş sayfasına yönlendirilmesi amacıyla Axios Interceptor yapısının projelendirildiği ve başarıyla uygulandığı raporlanmıştır.
+4. **Backend Entegrasyonu:** Backend tarafında kullanıcı şifrelerinin bcrypt algoritması ile şifrelenerek (hashlenerek) veritabanına kaydedildiği ve ilgili API uç noktalarının test edildiği onaylanmıştır.
+5. **Sonraki Adımlar:** Kimlik doğrulama aşamasının tamamlanmasıyla birlikte, veri çekme (Fetch) ve ana iş mantığını yürüten API'lerin sisteme tam entegrasyonuna başlanmasına karar verilmiştir.
 
-### A. Public (Herkese Açık) Modülü `(src/pages/Public/)`
-* `Home.tsx`: Logolu ana arama ekranı ve temel kategoriler.
-* `AnswerResult.tsx`: Yapay zeka eşleşmesi sonucu gösterilen net çözüm sayfası.
-* `SimilarQuestions.tsx`: Tam eşleşme bulunamadığında gösterilen soru havuzu ve favorileme/beğeni arayüzü.
-* `NoResult.tsx`: Sonuçsuz aramalarda kullanıcıyı sisteme yönlendiren karşılama sayfası.
-
-### B. Auth (Kimlik Doğrulama) Modülü `(src/pages/Auth/)`
-* `Login.tsx`: Öğrenci ve Admin için sekmeli (tab) ortak giriş ekranı.
-* `Register.tsx`: Yalnızca öğrencilere açık olan, kurumsal mail kontrolü içeren kayıt ekranı.
-
-### C. Öğrenci Paneli Modülü `(src/pages/Student/)`
-* `Dashboard.tsx`: Ana kontrol paneli.
-* `Profile.tsx`: Şifre ve kişisel bilgi güncelleme alanı.
-* `MyQuestions.tsx` & `Favorites.tsx`: Öğrencinin sorduğu ve etkileşime girdiği soruların durum takibi (Bekliyor/Cevaplandı).
-
-### D. Admin Paneli Modülü `(src/pages/Admin/)`
-* `Dashboard.tsx`: Sistem istatistiklerinin (pasta/çizgi grafik) yer aldığı görsel alan.
-* `PendingQuestions.tsx`: AI destekli cevaplama modalının tetiklendiği onay bekleyen sorular tablosu.
-* `QuestionPool.tsx`: Genel SSS havuzunun yönetildiği CRUD sayfası.
 

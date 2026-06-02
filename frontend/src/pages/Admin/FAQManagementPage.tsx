@@ -60,7 +60,7 @@ export default function FAQManagementPage() {
   return (
     <AdminLayout>
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-dpu-navy mb-2">Aktif SSS Yönetimi</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Aktif SSS Yönetimi</h2>
         <p className="text-dpu-textMuted">Yayında olan, cevaplanmış sıkça sorulan soruları düzenleyin veya silin.</p>
       </div>
 
