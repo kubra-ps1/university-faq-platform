@@ -82,6 +82,3 @@ docker compose up -d
 | **DevOps** | Docker, Docker Compose | Platform bağımsız, kolay ve güvenilir dağıtım |
 
 ---
-
-> [!TIP]
-> Projeyi test ederken, sistemin laubali sorulara karşı ne kadar sıkı bir moderasyon sergilediğini görmek için "salak işler nerede yapılıyor" gibi denemeler yapabilir ve anında yapay zeka tarafından reddedildiğini kendi gözlerinizle görebilirsiniz!
