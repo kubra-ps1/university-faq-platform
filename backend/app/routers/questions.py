@@ -9,26 +9,19 @@ from .. import ai_service
 router = APIRouter(prefix="/api", tags=["Student"])
 
 
-# ── Arama ─────────────────────────────────────────────────────────────────────
+
 
 @router.get("/faq/search", tags=["Public"])
 def search_faq(
     q: str = Query(..., min_length=2, description="Arama sorgusu"),
     db: Session = Depends(get_db),
 ):
-    """
-    AI destekli semantik arama.
 
-    Senaryo 1 → Cevaplanmış SSS ile yüksek eşleşme: direkt cevap döner.
-    Senaryo 2 → Bekleyen (pending) benzer soru var: "Bunu mu demek istediniz?" + Kaydet önerisi.
-    Senaryo 3 → Hiç eşleşme yok: soru sor yönlendirmesi.
-    """
-    # Tüm aktif soruları çek (SSS + pending) — rejected hariç
     all_questions = (
         db.query(models.Question)
         .filter(models.Question.status != models.QuestionStatus.rejected)
         .order_by(models.Question.created_at.desc())
-        .limit(200)  # token tasarrufu için
+        .limit(200) 
         .all()
     )
 
@@ -44,7 +37,7 @@ def search_faq(
 
     result = ai_service.semantic_search(q, questions_payload)
 
-    # Eşleşen soruları tam model nesnelerine dönüştür
+   
     matched_ids = {item["id"] for item in result["data"]}
     matched_questions = [qq for qq in all_questions if qq.id in matched_ids]
 
@@ -83,7 +76,7 @@ def get_all_faq(db: Session = Depends(get_db)):
     ]
 
 
-# ── Öğrenci Soru İşlemleri ────────────────────────────────────────────────────
+
 
 @router.post("/questions", response_model=schemas.QuestionDetail)
 async def ask_question(
@@ -91,11 +84,7 @@ async def ask_question(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """
-    Öğrenci soru gönderir.
-    Soru anında AI moderasyonundan geçer (Küfür/Hakaret engellenir).
-    Uygunsa havuza (pending) eklenir.
-    """
+
     existing = db.query(models.Question).filter(
         models.Question.question_text == question.question_text
     ).first()
@@ -107,11 +96,11 @@ async def ask_question(
             )
         return existing
 
-    # ── AI Moderasyon (Anlık - Bekletir ama anında sonuç döner) ──
+  
     moderation = await ai_service.moderate_question(question.question_text)
 
     if not moderation["isAppropriate"]:
-        # Uygunsuzsa reddet ve exception fırlat
+        
         rejected_q = models.Question(
             user_id=current_user.id,
             question_text=question.question_text,
@@ -134,7 +123,7 @@ async def ask_question(
             detail=moderation.get("reason") or "Sorunuz güvenlik politikasına uymadığı için gönderilemedi."
         )
 
-    # Yeni soruyu kaydet
+    
     new_q = models.Question(
         user_id=current_user.id,
         question_text=question.question_text,
@@ -154,7 +143,7 @@ async def ask_question(
     db.commit()
     db.refresh(new_q)
 
-    # ChromaDB'ye ekle
+   
     ai_service.upsert_question(new_q.id, new_q.question_text, new_q.status.value)
 
     return new_q
@@ -165,7 +154,7 @@ def get_my_questions(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Giriş yapmış öğrencinin sorularını döndürür."""
+    
     return db.query(models.Question).filter(
         models.Question.user_id == current_user.id
     ).order_by(models.Question.created_at.desc()).all()
@@ -177,7 +166,7 @@ def delete_question(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Öğrenci kendi sorusunu siler (sadece pending iken)."""
+   
     q = db.query(models.Question).filter(models.Question.id == question_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Soru bulunamadı.")
@@ -191,20 +180,20 @@ def delete_question(
     db.delete(q)
     db.commit()
     
-    # ChromaDB'den de sil
+    
     ai_service.delete_question_from_db(question_id)
     
     return {"message": "Soru silindi.", "id": question_id}
 
 
-# ── Favoriler ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/saved-items", response_model=list[schemas.SavedItemOut])
 def get_saved_items(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Öğrencinin kaydettiği soruları döndürür."""
+    
     return db.query(models.SavedItem).filter(
         models.SavedItem.user_id == current_user.id
     ).order_by(models.SavedItem.created_at.desc()).all()
@@ -216,7 +205,7 @@ def save_item(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Soruyu favorilere ekler."""
+    
     existing = db.query(models.SavedItem).filter(
         models.SavedItem.user_id     == current_user.id,
         models.SavedItem.question_id == question_id,
@@ -241,7 +230,7 @@ def unsave_item(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Soruyu favorilerden çıkarır."""
+    
     saved = db.query(models.SavedItem).filter(
         models.SavedItem.user_id     == current_user.id,
         models.SavedItem.question_id == question_id,

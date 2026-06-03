@@ -14,8 +14,6 @@ from .seed import run_seed
 
 
 
-# ── Uygulama Başlatma ─────────────────────────────────────────────────────────
-
 app = FastAPI(
     title="DPÜ SSS Platform API",
     description="Dumlupınar Üniversitesi Sık Sorulan Sorular Platformu Backend API",
@@ -31,7 +29,6 @@ app.add_middleware(
 )
 
 
-# ── Router Kaydı ──────────────────────────────────────────────────────────────
 
 app.include_router(auth_router.router)
 app.include_router(questions_router.router)
@@ -39,7 +36,6 @@ app.include_router(categories_router.router)
 app.include_router(admin_router.router)
 
 
-# ── Startup ───────────────────────────────────────────────────────────────────
 
 @app.on_event("startup")
 def startup_event():
@@ -47,8 +43,6 @@ def startup_event():
     models.Base.metadata.create_all(bind=engine)
     run_seed()
 
-
-# ── Sağlık Kontrolü ───────────────────────────────────────────────────────────
 
 @app.get("/health", tags=["System"])
 def health_check():

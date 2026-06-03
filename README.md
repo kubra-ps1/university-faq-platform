@@ -1,6 +1,6 @@
 <div align="center">
   
-# 🎓 DPÜ SSS Platformu (AI Destekli Akıllı Soru-Cevap)
+# DPÜ SSS Platformu (AI Destekli Akıllı Soru-Cevap)
 
 Modern, dinamik ve yapay zeka gücüyle desteklenen, Kütahya Dumlupınar Üniversitesi (DPÜ) öğrencileri için geliştirilmiş yeni nesil SSS (Sıkça Sorulan Sorular) platformu.
 
@@ -13,22 +13,22 @@ Modern, dinamik ve yapay zeka gücüyle desteklenen, Kütahya Dumlupınar Ünive
 
 ---
 
-## 🌟 Öne Çıkan Özellikler
+## Öne Çıkan Özellikler
 
-### 🤖 Gelişmiş Yapay Zeka Entegrasyonları
+### Gelişmiş Yapay Zeka Entegrasyonları
 - **Senaryo 1 (Doğrudan Cevap):** Öğrenci daha önce sorulmuş ve cevaplanmış bir soruyla aynı anlama gelen bir soru sorduğunda, yapay zeka (ChromaDB + Gemini Embeddings) soruyu anlamsal olarak eşleştirir ve anında "Tam İsabet" olarak cevabı getirir.
 - **Senaryo 2 (Benzer Soru Tespiti):** Öğrenci, sisteme eklenmiş ancak henüz admin tarafından cevaplanmamış (bekleyen) benzer bir soru sorduğunda, AI "Bunu mu demek istediniz?" uyarısı verir. Öğrenci aynı soruyu tekrar havuza eklemek yerine o soruyu "Favorilere" ekleyebilir.
 - **Senaryo 3 (Otonom Moderasyon):** Öğrenci yepyeni bir soru sorduğunda, metin anında AI Moderatörü tarafından analiz edilir. Laubali üslup, kaba dil, etik dışı içerik, küfür, hakaret veya siyasi ima taşıyan her türlü soru, yapay zeka tarafından reddedilir ve havuza alınmaz.
 - **Admin Asistanı:** Adminlere, gelen soruların yazım yanlışlarını düzelten (normalize eden) ve otomatik olarak hangi kategoriye ait olabileceğini öneren bir AI asistanı eşlik eder.
 
-### 🎨 Modern & Estetik Kullanıcı Arayüzü
+### Modern & Estetik Kullanıcı Arayüzü
 - **Glassmorphism:** Şeffaf cam efektleri, modern bulanık (blur) arka planlar.
 - **Dinamik Animasyonlar:** Full-screen modal geçişleri, otomatik kapanan animasyonlu geri bildirim (toast) çubukları, interaktif "Hover" ve "Pulse" animasyonları.
 - **DPÜ Kurumsal Renkleri:** Neon yeşil, koyu lacivert (slate) ve zengin zümrüt tonlarıyla tasarlanmış fütüristik gece (dark) modu.
 
 ---
 
-## 🗄️ Veritabanı Mimarisi
+## Veritabanı Mimarisi
 
 Sistem **PostgreSQL** kullanmaktadır ve veritabanı tablolarımız **SQLAlchemy ORM** modeli ile yönetilmektedir.
 
@@ -36,7 +36,7 @@ Aşağıdaki veritabanı diyagramı, projedeki güncel şemayı birebir yansıtm
 
 ![Veritabanı Diyagramı](./docs/veritabani_diyagrami.png)
 
-### 📌 Tablolar ve İşlevleri:
+### Tablolar ve İşlevleri:
 - **`User` (Kullanıcılar):** Öğrenci, Personel ve Admin kayıtları burada tutulur.
 - **`Category` (Kategoriler):** Soruların gruplandırıldığı SSS kategorileri.
 - **`Question` (Sorular):** Sistemin merkez tablosu. Hem adminlerin cevapladığı aktif SSS'ler hem de öğrencilerin sorup cevap beklediği sorular (`status` alanı ile) burada tutulur.
@@ -46,7 +46,7 @@ Aşağıdaki veritabanı diyagramı, projedeki güncel şemayı birebir yansıtm
 
 ---
 
-## 🚀 Kurulum & Çalıştırma (Docker)
+## Kurulum & Çalıştırma (Docker)
 
 Platform, tek bir komutla ayağa kaldırılabilmesi için **Docker Compose** ile konteynerize edilmiştir. 
 
@@ -69,7 +69,7 @@ docker compose up -d
 
 ---
 
-## 🛠️ Teknolojik Altyapı
+## Teknolojik Altyapı
 
 | Alan | Teknoloji | Açıklama |
 | :--- | :--- | :--- |
@@ -83,5 +83,3 @@ docker compose up -d
 
 ---
 
-> [!TIP]
-> Projeyi test ederken, sistemin laubali sorulara karşı ne kadar sıkı bir moderasyon sergilediğini görmek için "salak işler nerede yapılıyor" gibi denemeler yapabilir ve anında yapay zeka tarafından reddedildiğini kendi gözlerinizle görebilirsiniz!

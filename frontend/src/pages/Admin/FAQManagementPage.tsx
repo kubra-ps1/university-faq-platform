@@ -38,10 +38,8 @@ export default function FAQManagementPage() {
   const handleEditSubmit = async () => {
     if (!selectedQuestion || !editText.trim() || !editAnswer.trim()) return;
     
-    // API Call
     await api.editAnsweredQuestion(selectedQuestion.id, editText, editAnswer);
     
-    // Update UI
     setQuestions(questions.map(q => 
       q.id === selectedQuestion.id 
         ? { ...q, text: editText, answer: editAnswer } 
@@ -102,7 +100,6 @@ export default function FAQManagementPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="SSS Düzenle">
         {selectedQuestion && (
           <div className="space-y-4">

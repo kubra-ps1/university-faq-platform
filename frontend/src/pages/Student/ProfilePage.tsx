@@ -78,7 +78,7 @@ export default function ProfilePage() {
     <StudentLayout userName={userProfile?.full_name || userProfile?.email || 'Öğrenci'}>
       <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
 
-        {/* Profile Header */}
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="glass-card p-8 flex flex-col items-center justify-center text-center">
             <div className="w-24 h-24 bg-dpu-green/10 border-2 border-dpu-green/20 rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(0,237,100,0.1)]">
@@ -138,7 +138,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Tabs Section */}
+        
         <div className="glass-card overflow-hidden">
           <div className="flex border-b border-white/5">
             <button

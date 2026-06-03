@@ -16,13 +16,13 @@ def get_stats(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Admin istatistik paneli."""
+    
     from sqlalchemy import func
 
     total_q    = db.query(models.Question).count()
     total_s    = db.query(models.User).filter(models.User.role == "student").count()
 
-    # Favori sayısı en az min_favorites olan, cevaplanmayı bekleyen sorular
+   
     subq = (
         db.query(models.SavedItem.question_id)
         .group_by(models.SavedItem.question_id)
@@ -51,7 +51,7 @@ def get_stats(
     for i in range(6, -1, -1):
         day = datetime.now(timezone.utc) - timedelta(days=i)
         day_str = day.strftime("%Y-%m-%d")
-        # haftalık soru sayısını günlere göre veren çizgi grafiği
+        
         count = db.query(models.Question).filter(
             models.Question.created_at >= day.replace(hour=0, minute=0, second=0),
             models.Question.created_at <  day.replace(hour=23, minute=59, second=59),
@@ -73,7 +73,7 @@ def get_admin_pending(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Bekleyen soruları döndürür — admin incelemesi için."""
+    
     from sqlalchemy import func
 
     subq = (
@@ -119,7 +119,7 @@ def answer_question(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Admin soruyu cevaplar."""
+   
     from .. import models as _m
     q = db.query(_m.Question).filter(_m.Question.id == question_id).first()
     if not q:
@@ -130,18 +130,18 @@ def answer_question(
     q.status      = _m.QuestionStatus.answered
     q.answered_at = datetime.now(timezone.utc)
 
-    # Admin'in normalize ettiği soru metnini kaydet
+   
     if answer.normalized_text and answer.normalized_text.strip():
         q.question_text = answer.normalized_text.strip()
 
-    # Admin'in seçtiği kategoriyi kaydet
+    
     if answer.category_id is not None:
         q.category_id = answer.category_id
 
     db.commit()
     db.refresh(q)
     
-    # ChromaDB'ye normalize metni indexle
+    
     ai_service.upsert_question(q.id, q.question_text, q.status.value)
     
     return q
@@ -154,7 +154,7 @@ def reject_question(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Admin soruyu reddeder."""
+    
     from .. import models as _m
     from fastapi import HTTPException
     q = db.query(_m.Question).filter(_m.Question.id == question_id).first()
@@ -166,7 +166,7 @@ def reject_question(
     db.commit()
     db.refresh(q)
     
-    # Reddedilen soruyu arama havuzundan (ChromaDB) çıkar
+   
     ai_service.delete_question_from_db(question_id)
     
     return q
@@ -179,7 +179,7 @@ def get_question_pool(
     skip: int = 0,
     limit: int = 50,
 ):
-    """Tüm soruların havuzunu (sadece pending) döndürür — admin yönetim ekranı."""
+
     from sqlalchemy import func
     questions = (
         db.query(models.Question, func.count(models.SavedItem.id).label('favorite_count'))
@@ -216,7 +216,7 @@ def get_admin_faq(
     skip: int = 0,
     limit: int = 50,
 ):
-    """Sadece cevaplanmış SSS'leri döndürür — admin paneli için."""
+    
     from sqlalchemy import func
     questions = (
         db.query(models.Question, func.count(models.SavedItem.id).label('favorite_count'))
@@ -252,7 +252,7 @@ def create_admin_faq(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Admin tarafından doğrudan SSS oluşturulur."""
+   
     if current_user.role not in ("admin", "staff"):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Yetkiniz yok.")
@@ -282,7 +282,7 @@ def update_admin_question(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Mevcut bir soruyu (SSS veya havuz) düzenler."""
+   
     from fastapi import HTTPException
     q = db.query(models.Question).filter(models.Question.id == question_id).first()
     if not q:
@@ -333,7 +333,7 @@ def get_ai_logs(
     skip: int = 0,
     limit: int = 100,
 ):
-    """AI moderasyon geçmişini döndürür."""
+    
     return db.query(models.AILog).order_by(
         models.AILog.processed_at.desc()
     ).offset(skip).limit(limit).all()
@@ -345,24 +345,20 @@ async def prepare_question_for_admin(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """
-    Admin "Cevapla" butonuna bastığında çağrılır.
-    Gemini'den normalize edilmiş soru metni + kategori önerisi alır.
-    Admin her iki alanı da düzenleyebilir.
-    """
+   
     q = db.query(models.Question).filter(models.Question.id == question_id).first()
     if not q:
         raise HTTPException(status_code=404, detail="Soru bulunamadı.")
 
-    # Mevcut kategorileri çek
+    
     categories = db.query(models.Category).all()
     category_names = [c.name for c in categories]
     category_map   = {c.name: c.id for c in categories}
 
-    # Gemini'ye gönder (Asenkron)
+   
     result = await ai_service.prepare_for_admin(q.question_text, category_names)
 
-    # Önerilen kategorinin ID'sini bul
+    
     suggested_name = result["suggestedCategory"]
     suggested_id   = category_map.get(suggested_name)
 

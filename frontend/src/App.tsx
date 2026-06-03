@@ -21,14 +21,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+      
         <Route path="/" element={<HomePage />} />
 
-        {/* Auth Routes */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
 
-        {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/profile" element={<ProfilePage />} />
 
@@ -38,7 +36,6 @@ function App() {
         <Route path="/admin/question-pool" element={<QuestionPoolPage />} />
         <Route path="/admin/categories" element={<CategoriesPage />} />
 
-        {/* Catch All */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

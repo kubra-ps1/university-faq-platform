@@ -26,11 +26,11 @@ export interface Question {
   createdAt: string;
   categoryId?: string;
   answer?: string;
-  isSaved?: boolean; // 'İlgilendiklerim' durumu
+  isSaved?: boolean; 
   favoriteCount?: number;
 }
 
-// Chart Data Types
+
 export interface KeywordData {
   name: string;
   value: number;

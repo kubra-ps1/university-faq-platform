@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api", tags=["Categories"])
 
 @router.get("/categories", tags=["Public"])
 def get_categories(db: Session = Depends(get_db)):
-    """Tüm kategorileri ve soru sayılarını döndürür."""
+    
     cats = db.query(models.Category).all()
     return [
         {
@@ -24,7 +24,7 @@ def get_categories(db: Session = Depends(get_db)):
 
 @router.get("/categories/counts", tags=["Public"])
 def get_categories_counts(db: Session = Depends(get_db)):
-    """Sadece kategorilerin cevaplanmış soru sayılarını döndürür."""
+    
     cats = db.query(models.Category).all()
     return [
         {
@@ -41,7 +41,7 @@ def create_category(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Yeni kategori oluşturur (admin)."""
+    
     if db.query(models.Category).filter(models.Category.name == cat.name).first():
         raise HTTPException(status_code=400, detail="Bu kategori zaten mevcut.")
     new_cat = models.Category(name=cat.name)
@@ -58,7 +58,7 @@ def update_category(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin),
 ):
-    """Kategori ismini günceller (admin)."""
+    
     cat = db.query(models.Category).filter(models.Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Kategori bulunamadı.")

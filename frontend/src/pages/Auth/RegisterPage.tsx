@@ -64,7 +64,7 @@ export default function RegisterPage() {
       setFormData({ 
         ...formData, 
         faculty: value, 
-        department: '' // Reset department when faculty changes
+        department: ''
       });
     } else {
       setFormData({ ...formData, [name]: value });

@@ -133,7 +133,6 @@ export default function DashboardPage() {
   return (
     <StudentLayout userName={userName}>
       <div className="relative pt-12 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden -mx-4 sm:-mx-6 lg:-mx-8 mb-12 -mt-12 bg-gradient-to-b from-dpu-navy to-dpu-bg">
-        {/* Aesthetic Watermark Emblem */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 opacity-[0.08] transform rotate-6 scale-[3] blur-[2px]">
           <TreePine size={400} strokeWidth={0.5} className="text-dpu-green" />
         </div>
@@ -173,7 +172,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Search Results - Always at top if exists */}
         {searchResults.type && searchResults.data.length > 0 && (
           <div className="animate-slide-up mb-12 space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center gap-4">
@@ -210,7 +208,6 @@ export default function DashboardPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT COLUMN: CATEGORIES & QUESTIONS */}
           <div className="lg:col-span-8 order-2 lg:order-1">
             {isLoading ? (
               <div className="flex justify-center items-center py-24">
@@ -268,7 +265,6 @@ export default function DashboardPage() {
             ) : null}
           </div>
 
-          {/* RIGHT COLUMN: ASK QUESTION */}
           <div className="lg:col-span-4 order-1 lg:order-2">
             <div className="sticky top-24">
               <div className="flex items-center gap-4 mb-6">
@@ -307,7 +303,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      {/* ═══ FULL-SCREEN AI PROCESSING MODAL ═══ */}
       {isSubmitting && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center ai-overlay-enter" style={{ pointerEvents: 'all' }}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -327,7 +322,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ═══ FULL-SCREEN RESULT TOAST MODAL ═══ */}
       {submitResult && (
         <div 
           className={`fixed inset-0 z-[9999] flex items-center justify-center ai-overlay-enter ${
@@ -344,7 +338,6 @@ export default function DashboardPage() {
           } ${
             submitResult.type === 'error' ? 'result-card-error' : 'result-card-success'
           }`} onClick={(e) => e.stopPropagation()}>
-            {/* Decorative top glow */}
             <div className={`absolute -top-px left-1/2 -translate-x-1/2 w-3/4 h-px ${
               submitResult.type === 'error'
                 ? 'bg-gradient-to-r from-transparent via-red-500/60 to-transparent'
@@ -352,7 +345,6 @@ export default function DashboardPage() {
             }`} />
             
             <div className="flex flex-col items-center text-center py-4">
-              {/* Icon */}
               <div className={`p-4 rounded-2xl mb-5 ${
                 submitResult.type === 'error'
                   ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 shadow-[0_0_30px_rgba(239,68,68,0.15)]'
@@ -364,21 +356,21 @@ export default function DashboardPage() {
                 }
               </div>
               
-              {/* Title */}
+              
               <h3 className={`text-lg font-black uppercase tracking-wider mb-2 ${
                 submitResult.type === 'error' ? 'text-red-400' : 'text-emerald-400'
               }`}>
                 {submitResult.type === 'error' ? 'Soru Reddedildi' : 'Başarıyla Gönderildi!'}
               </h3>
               
-              {/* Message */}
+              
               <p className={`text-sm font-medium leading-relaxed max-w-xs ${
                 submitResult.type === 'error' ? 'text-red-300/80' : 'text-emerald-300/80'
               }`}>
                 {submitResult.text}
               </p>
 
-              {/* Auto-dismiss progress bar */}
+              
               <div className="w-full mt-6 h-1 rounded-full bg-white/5 overflow-hidden">
                 <div className={`h-full rounded-full ${
                   submitResult.type === 'error'

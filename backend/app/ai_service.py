@@ -1,11 +1,4 @@
-"""
-ai_service.py — Tüm Gemini çağrılarını merkezileştirir.
 
-İstasyonlar:
-  1. moderate_question()      → İçerik moderasyonu (hakaret/spam kontrolü)
-  2. prepare_for_admin()      → Soru normalizasyonu + kategori önerisi
-  3. semantic_search()        → Senaryo 1/2/3 anlamsal arama
-"""
 
 import os
 import json
@@ -18,14 +11,13 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# .env dosyasındaki değişkenleri sisteme yükler
+
 load_dotenv()
 
-# API Anahtarını al ve yapılandır
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    # gemini-2.5-flash: farklı kota havuzu, ücretsiz tier'da daha cömert
+    
     model = genai.GenerativeModel('gemini-2.5-flash')
 else:
     model = None
@@ -34,12 +26,12 @@ def _get_model():
     return model
 
 
-# Pydantic Schema for Moderation
+
 class ModerationResult(BaseModel):
     isAppropriate: bool = Field(description="True if the question is appropriate, False otherwise.")
     reason: str | None = Field(description="Reason for rejection if inappropriate, else null.")
 
-# Pydantic Schema for Admin Prep
+
 class AdminPreparationResult(BaseModel):
     normalizedQuestion: str = Field(description="The normalized, formal version of the question.")
     suggestedCategory: str = Field(description="The name of the suggested category (from the provided list, or a completely new one if none fit).")
@@ -47,27 +39,17 @@ class AdminPreparationResult(BaseModel):
     confidence: float = Field(description="Confidence score between 0.0 and 1.0.")
 
 
-# ── 1. İçerik Moderasyonu ───────────────────────────────────────────────────
+
 
 async def moderate_question(question_text: str) -> dict[str, Any]:
-    """
-    Soruyu içerik politikasına göre denetler. Asenkron çalışır.
 
-    Dönüş:
-        {
-            "isAppropriate": bool,
-            "reason": str | None   # Sadece uygunsuzsa doldurulur
-        }
-    Fallback (API hatası): {"isAppropriate": True, "reason": None}
-    """
     m = _get_model()
     if m is None:
-        # API anahtarı yoksa moderasyonu atla (geliştirme modu)
         logger.warning("GEMINI_API_KEY bulunamadı, moderasyon atlanıyor.")
         return {"isAppropriate": True, "reason": None}
 
-    # Yerel Kara Liste Kontrolü (Yapay Zeka Bazen Esnek Davranabiliyor)
-    blacklist = ["salak", "aptal", "saçma", "amk", "aq", "pedofili", "siyaset", "parti", "boş iş", "gerizekalı"]
+    
+    blacklist = ["salak", "aptal", "saçma", "aq", "pedofili", "siyaset", "parti", "boş iş", "gerizekalı"]
     lower_q = question_text.lower()
     if any(word in lower_q for word in blacklist):
         return {"isAppropriate": False, "reason": "İçerik güvenlik politikalarımıza uymadığı için engellendi (Uygunsuz İfade)."}
@@ -107,17 +89,14 @@ async def moderate_question(question_text: str) -> dict[str, Any]:
             return {"isAppropriate": False, "reason": "AI sistemi şu an meşgul. Lütfen biraz sonra tekrar deneyiniz."}
         logger.error("Moderasyon API hatası: %s", exc)
 
-    # Geçici ağ hatası vb. durumlarda sistemi kitlememek için onaylı sayılır
+    
     return {"isAppropriate": False, "reason": "AI sistemi şu an geçici bir hata yaşıyor. Lütfen tekrar deneyiniz."}
 
 
-# ── 2. Admin Normalize + Kategori Önerisi ───────────────────────────────────
+
 
 async def prepare_for_admin(raw_text: str, available_categories: list[str]) -> dict[str, Any]:
-    """
-    Ham öğrenci sorusunu resmi SSS formatına normalize eder ve
-    mevcut kategorilerden biri için öneri üretir. Asenkron çalışır.
-    """
+
     m = _get_model()
     cats_str = ", ".join(available_categories) if available_categories else "Diğer"
 
@@ -155,7 +134,7 @@ async def prepare_for_admin(raw_text: str, available_categories: list[str]) -> d
         resp_text = response.text.strip()
         logger.info("Gemini prepare raw response: %s", resp_text)
         
-        # Olası markdown bloklarını temizle
+        
         if resp_text.startswith("```json"):
             resp_text = resp_text[7:]
         if resp_text.startswith("```"):
@@ -169,7 +148,7 @@ async def prepare_for_admin(raw_text: str, available_categories: list[str]) -> d
         suggested = str(result.get("suggestedCategory", "")).strip()
         is_new = bool(result.get("isNewCategory", False))
         
-        # Yapay zeka mevcut kategoriden biri seçildiyse isNewCategory'yi düzelt
+        
         if suggested in available_categories:
             is_new = False
         elif suggested:
@@ -195,16 +174,13 @@ async def prepare_for_admin(raw_text: str, available_categories: list[str]) -> d
     return fallback_response
 
 
-# ── 3. Semantik Arama (Senaryo 1 / 2 / 3) ──────────────────────────────────
+
 
 import chromadb
 from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 
 class GeminiEmbeddingFunction(EmbeddingFunction):
-    """
-    Google Gemini's text-embedding-004 model for highly accurate,
-    contextual multilingual (Turkish) semantic search.
-    """
+
     def __call__(self, input: Documents) -> Embeddings:
         if not input: return []
         try:
@@ -213,21 +189,21 @@ class GeminiEmbeddingFunction(EmbeddingFunction):
                 content=list(input),
                 task_type="retrieval_document"
             )
-            # Response['embedding'] is a list of embeddings
+            
             return response['embedding']
         except Exception as exc:
             logger.error("Gemini Embedding hatası: %s", exc)
-            # Return zero vectors as fallback (3072 is gemini-embedding-001 dimension)
+           
             return [[0.0] * 3072 for _ in input]
 
 try:
-    # ChromaDB kurulumu
+    
     chroma_client = chromadb.PersistentClient(path="./chroma_db")
 
-    # Gemini bazlı Embedding fonksiyonu
+   
     ef = GeminiEmbeddingFunction()
 
-    # Model boyutları ve vektör uzayı değiştiği için yeni collection oluşturduk:
+   
     collection = chroma_client.get_or_create_collection(
         name="faq_questions_gemini_v2", 
         embedding_function=ef,
@@ -259,15 +235,11 @@ def delete_question_from_db(question_id: int):
     try:
         collection.delete(ids=[str(question_id)])
     except Exception as exc:
-        # Silinecek ID yoksa hata fırlatabilir, yoksay
         pass
 
 
 def semantic_search(query: str, questions: list[dict]) -> dict[str, Any]:
-    """
-    Kullanıcı sorgusunu ChromaDB kullanarak anlamsal (vektörel) olarak karşılaştırır.
-    En yakın geçerli sonucun statüsüne göre Senaryo 1 (answered) veya Senaryo 2 (pending) belirler.
-    """
+
     if not questions:
         return {"scenario": 3, "type": "none", "data": []}
 
@@ -276,7 +248,6 @@ def semantic_search(query: str, questions: list[dict]) -> dict[str, Any]:
         return _fallback_search(query, questions)
 
     try:
-        # Sorguyu vektör veritabanında ara:
         results = collection.query(
             query_texts=[query],
             n_results=min(3, len(questions)),
@@ -290,12 +261,10 @@ def semantic_search(query: str, questions: list[dict]) -> dict[str, Any]:
         best_metadatas = results["metadatas"][0]
         best_ids       = results["ids"][0]
 
-        # Geçerli (eşik değerinin altındaki) tüm eşleşmeleri topla
+       
         valid_matches = []
         for i, dist in enumerate(best_distances):
             status = best_metadatas[i]["status"]
-            # Türkçe bağlamsal aramalarda en isabetli eşik değerleri:
-            # Answered için < 0.40, Pending için < 0.45
             is_valid_answered = (status == "answered" and dist < 0.40)
             is_valid_pending = (status == "pending" and dist < 0.45)
 
@@ -309,19 +278,16 @@ def semantic_search(query: str, questions: list[dict]) -> dict[str, Any]:
         if not valid_matches:
             return {"scenario": 3, "type": "none", "data": []}
 
-        # ChromaDB sonuçları zaten en yakın mesafeden en uzağa sıralı getirir.
-        # Bu yüzden ilk eleman en yakın geçerli eşleşmedir.
+       
         best_match = valid_matches[0]
 
         if best_match["status"] == "answered":
-            # En yakın eşleşme answered ise Senaryo 1: Direkt Cevap
-            # Sadece answered olan geçerli eşleşmeleri döndür
+           
             answered_ids = [m["id"] for m in valid_matches if m["status"] == "answered"]
             matched = [q for q in questions if q["id"] in answered_ids]
             return {"scenario": 1, "type": "directAnswer", "data": matched}
         else:
-            # En yakın eşleşme pending ise Senaryo 2: "Bunu mu demek istediniz?"
-            # Sadece pending olan geçerli eşleşmeleri döndür
+        
             pending_ids = [m["id"] for m in valid_matches if m["status"] == "pending"]
             matched = [q for q in questions if q["id"] in pending_ids]
             return {"scenario": 2, "type": "similar", "data": matched}

@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 
 
-# ── Enums ────────────────────────────────────────────────────────────────────
+
 
 class UserRoleEnum(str, Enum):
     student = "student"
@@ -23,7 +23,6 @@ class AIActionEnum(str, Enum):
     flagged  = "flagged"
 
 
-# ── User Schemas ──────────────────────────────────────────────────────────────
 
 class UserCreate(BaseModel):
     email:      EmailStr
@@ -78,7 +77,6 @@ class Token(BaseModel):
     user:         UserOut
 
 
-# ── Category Schemas ──────────────────────────────────────────────────────────
 
 class CategoryCreate(BaseModel):
     name: str
@@ -93,7 +91,6 @@ class CategoryOut(BaseModel):
         from_attributes = True
 
 
-# ── Question Schemas ──────────────────────────────────────────────────────────
 
 class QuestionCreate(BaseModel):
     question_text: str
@@ -133,9 +130,8 @@ class QuestionDetail(QuestionResponse):
 
 class QuestionAnswer(BaseModel):
     answer_text:      str
-    category_id:      Optional[int] = None   # admin'in seçtiği/değiştirdiği kategori
-    normalized_text:  Optional[str] = None   # AI + admin'in normalize ettiği soru metni
-
+    category_id:      Optional[int] = None  
+    normalized_text:  Optional[str] = None  
 
 class QuestionReject(BaseModel):
     reason: Optional[str] = None

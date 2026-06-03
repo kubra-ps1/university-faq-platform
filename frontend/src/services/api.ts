@@ -16,9 +16,7 @@ apiInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// --- MAPPERS ---
-// Backend expects specific schema, frontend expects different casing/names
-// This adapter pattern minimizes refactoring in UI components.
+
 
 const mapCategory = (data: unknown): Category => {
   const d = data as Record<string, unknown>;
@@ -48,7 +46,7 @@ const mapQuestion = (data: unknown): Question => {
   };
 };
 
-// --- AUTHENTICATION ---
+
 export const login = async (credential: LoginCredentials): Promise<AuthResponse> => {
   try {
     const formData = new URLSearchParams();
@@ -109,15 +107,15 @@ export const register = async (registerData: RegisterRequest): Promise<RegisterR
   }
 };
 
-// --- API METHODS ---
+
 export const api = {
-  // Dashboard & Stats
+  
   getDashboardStats: async () => {
     const res = await apiInstance.get('/admin/stats');
     return res.data;
   },
   
-  // Public Data
+ 
   getCategories: async (): Promise<Category[]> => {
     const res = await apiInstance.get('/categories');
     return res.data.map(mapCategory);
@@ -138,7 +136,7 @@ export const api = {
     return { type: res.data.type, data: mappedData };
   },
 
-  // Admin Routes
+  
   getPendingQuestions: async (): Promise<Question[]> => {
     const res = await apiInstance.get('/admin/pending');
     return res.data.map(mapQuestion);
@@ -175,8 +173,7 @@ export const api = {
     return mapQuestion(res.data);
   },
   editAnsweredQuestion: async (id: string, questionText: string, answerText: string) => {
-    // If backend doesn't require categoryId for edit, we just send what we have or fetch it first.
-    // Assuming backend takes optional fields in PUT/PATCH for edit
+  
     const payload = {
       question_text: questionText,
       answer_text: answerText
@@ -189,7 +186,7 @@ export const api = {
     return res.data;
   },
   
-  // Category Admin Methods
+  
   getCategoryCounts: async (): Promise<Record<string, number>> => {
     const res = await apiInstance.get('/categories/counts');
     const counts: Record<string, number> = {};
@@ -211,9 +208,8 @@ export const api = {
     await apiInstance.delete(`/categories/${id}`);
   },
 
-  // Student Methods
+ 
   getStudentQuestions: async (): Promise<Question[]> => {
-    // User ID is inferred from JWT
     const res = await apiInstance.get('/my-questions');
     return res.data.map(mapQuestion);
   },
@@ -242,11 +238,7 @@ export const api = {
   },
   getStudentInterests: async (): Promise<Question[]> => {
     const res = await apiInstance.get('/saved-items');
-    // Saved items return a slightly different schema or question objects? 
-    // Usually it returns SavedItemOut with question details nested or joined.
-    // Let's assume backend returns a list of questions directly if mapped, but if it returns SavedItemOut, we need to map differently.
-    // We will adjust this if there's an issue.
-    // Let's check SavedItemOut
+  
     return res.data.map((item: unknown) => {
       const d = item as { question?: unknown };
       return mapQuestion(d.question || item);
@@ -259,12 +251,12 @@ export const api = {
     await apiInstance.delete(`/saved-items/${id}`);
   },
   
-  // Auth & Profile
+  
   getUserProfile: async () => {
     const res = await apiInstance.get('/auth/me');
     return res.data;
   },
-  updateProfile: async () => {}, // Not implemented in backend yet
+  updateProfile: async () => {}, 
   changePassword: async (currentPassword: string, newPassword: string) => {
     await apiInstance.post('/auth/change-password', {
       current_password: currentPassword,
@@ -272,7 +264,7 @@ export const api = {
     });
   },
 
-  // Misc Fake Methods
+  
   getKeywordData: async () => [],
   getTrafficData: async () => [],
 };

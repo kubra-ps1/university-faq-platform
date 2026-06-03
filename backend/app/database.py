@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
 
-# backend/ kök dizinindeki .env dosyasını açıkça yükle
+
 _env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=_env_path)
 
@@ -20,10 +20,7 @@ Base         = declarative_base()
 
 
 def get_db():
-    """
-    FastAPI Dependency Injection için DB oturumu sağlar.
-    Her request'te yeni oturum açar, bittikten sonra kapatır.
-    """
+ 
     db = SessionLocal()
     try:
         yield db

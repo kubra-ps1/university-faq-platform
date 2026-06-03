@@ -4,15 +4,11 @@ from .database import SessionLocal
 
 
 def run_seed():
-    """
-    Veritabanına başlangıç verilerini ekler (idempotent - tekrar çalıştırılabilir)
-    """
+
     db = SessionLocal()
     
     try:
-        # ═══════════════════════════════════════════════════════════════
-        # KULLANICILAR
-        # ═══════════════════════════════════════════════════════════════
+
         
         users_data = [
             {
@@ -62,9 +58,7 @@ def run_seed():
                 print(f"⊘ Kullanıcı zaten mevcut: {user_data['email']}")
         
         
-        # ═══════════════════════════════════════════════════════════════
-        # KATEGORİLER
-        # ═══════════════════════════════════════════════════════════════
+ 
         
         categories_list = [
             "Kayıt İşlemleri",
@@ -87,13 +81,11 @@ def run_seed():
             else:
                 print(f"⊘ Kategori zaten mevcut: {cat_name}")
         
-        # ⚠️ ÖNEMLİ: Kategorileri commit et ki id'leri atansın
+       
         db.commit()
         
         
-        # ═══════════════════════════════════════════════════════════════
-        # YARDIMCI: Kategori ve kullanıcıları çek
-        # ═══════════════════════════════════════════════════════════════
+      
         
         admin = db.query(models.User).filter(models.User.email == "admin@dpu.edu.tr").first()
         ogrenci = db.query(models.User).filter(models.User.email == "ogrenci@dpu.edu.tr").first()
@@ -107,12 +99,10 @@ def run_seed():
         cat_sinav = db.query(models.Category).filter(models.Category.name == "Sınav Takvimi").first()
         
         
-        # ═══════════════════════════════════════════════════════════════
-        # SSS SORULARI (Cevaplanmış - FAQ)
-        # ═══════════════════════════════════════════════════════════════
+      
         
         faq_questions = [
-            # Kayıt İşlemleri (3)
+           
             {
                 "question": "Ders kaydı ne zaman yapılır?",
                 "answer": "Ders kayıtları her dönem başında akademik takvimde belirlenen tarihlerde yapılır. Öğrenci Bilgi Sistemi (ÖBS) üzerinden online olarak gerçekleştirilir.",
@@ -132,7 +122,7 @@ def run_seed():
                 "user": admin
             },
             
-            # Burslar (3)
+            
             {
                 "question": "Başarı bursu nasıl alınır?",
                 "answer": "Her dönem not ortalaması 3.00 ve üzeri olan öğrencilere başarı bursu verilir. Otomatik olarak hesabınıza yatırılır.",
@@ -152,7 +142,7 @@ def run_seed():
                 "user": admin
             },
             
-            # Kütüphane (2)
+           
             {
                 "question": "Kütüphane çalışma saatleri nedir?",
                 "answer": "Merkez kütüphane hafta içi 08:00-22:00, hafta sonu 09:00-18:00 saatleri arasında açıktır.",
@@ -166,7 +156,7 @@ def run_seed():
                 "user": admin
             },
             
-            # Yemekhane (2)
+           
             {
                 "question": "Yemekhane çalışma saatleri nedir?",
                 "answer": "Öğle yemeği: 11:30-14:00, Akşam yemeği: 17:30-19:30 saatleri arasında servis yapılmaktadır.",
@@ -180,7 +170,7 @@ def run_seed():
                 "user": admin
             },
             
-            # Yurtlar (2)
+            
             {
                 "question": "Yurt başvuruları nasıl yapılır?",
                 "answer": "Yurt başvuruları e-Devlet üzerinden KYK sistemi aracılığıyla yapılır. Başvuru dönemleri Temmuz-Ağustos aylarıdır.",
@@ -194,7 +184,7 @@ def run_seed():
                 "user": admin
             },
             
-            # Sınav Takvimi (2)
+           
             {
                 "question": "Vize sınavları ne zaman yapılır?",
                 "answer": "Vize sınavları dönemin 7-8. haftalarında yapılır. Kesin tarihler akademik takvimde belirtilir ve ÖBS'de yayınlanır.",
@@ -223,7 +213,7 @@ def run_seed():
                     status=models.QuestionStatus.answered,
                     ai_checked=True,
                     ai_reject_reason=None,
-                    answered_at=None  # İstersen func.now() ekleyebilirsiniz
+                    answered_at=None  
                 )
                 db.add(new_q)
                 print(f"✓ SSS eklendi: {faq['question'][:50]}...")
@@ -231,9 +221,7 @@ def run_seed():
                 print(f"⊘ SSS zaten mevcut: {faq['question'][:50]}...")
         
         
-        # ═══════════════════════════════════════════════════════════════
-        # BEKLEYİŞTE OLAN SORULAR (Havuz)
-        # ═══════════════════════════════════════════════════════════════
+    
         
         pending_questions = [
             {
@@ -290,7 +278,7 @@ def run_seed():
                     question_text=pend["question"],
                     answer_text=None,
                     status=models.QuestionStatus.pending,
-                    ai_checked=True,  # AI kontrolden geçmiş varsayalım
+                    ai_checked=True,  
                     ai_reject_reason=None
                 )
                 db.add(new_q)
@@ -299,16 +287,14 @@ def run_seed():
                 print(f"⊘ Bekleyen soru zaten mevcut: {pend['question'][:50]}...")
         
         
-        # ═══════════════════════════════════════════════════════════════
-        # COMMIT - TÜM SORULARI KAYDET
-        # ═══════════════════════════════════════════════════════════════
+      
         db.commit()
-        print("\n✅ Seed işlemi başarıyla tamamlandı!")
+        print("\n Seed işlemi başarıyla tamamlandı!")
         
     except Exception as e:
         db.rollback()
-        print(f"\n❌ Seed sırasında hata oluştu: {e}")
-        raise  # Hatayı yukarı fırlat ki main.py görsün
+        print(f"\nSeed sırasında hata oluştu: {e}")
+        raise  
         
     finally:
         db.close()

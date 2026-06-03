@@ -15,11 +15,7 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=schemas.Token)
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    """
-    Yeni kullanıcı kaydı.
-    Şifreyi bcrypt ile hashleyip veritabanına kaydeder,
-    ardından JWT access token döndürür.
-    """
+
     if db.query(models.User).filter(models.User.email == user_in.email).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -52,10 +48,7 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    """
-    Kullanıcı girişi — OAuth2PasswordRequestForm (username = e-posta).
-    Swagger UI'da 'Authorize' butonu ile doğrudan test edilebilir.
-    """
+   
     user = db.query(models.User).filter(
         models.User.email == form_data.username
     ).first()
@@ -93,7 +86,7 @@ def change_password(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user),
 ):
-    """Kullanıcı şifresini günceller."""
+    
     if not auth_utils.verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -114,7 +107,7 @@ def get_user_by_id(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user)
 ):
-    """Verilen ID'ye sahip kullanıcıyı döndürür."""
+   
     user = db.query(models.User).filter(models.User.id == request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
@@ -125,7 +118,7 @@ def get_all_users(
     db: Session = Depends(get_db),
     current_user=Depends(auth_utils.get_current_user)
 ):
-    """Sistemdeki tüm kullanıcıları döndürür."""
+    
     users = db.query(models.User).all()
     return users
 
@@ -135,7 +128,7 @@ def delete_user_by_id(
     db: Session = Depends(get_db),
     _admin=Depends(auth_utils.require_admin)
 ):
-    """(Sadece Admin) Verilen ID'ye sahip kullanıcıyı siler."""
+    
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")

@@ -176,7 +176,6 @@ export default function PendingQuestionsPage() {
         </div>
       )}
 
-      {/* Answer Modal */}
       <Modal isOpen={isAnswerModalOpen} onClose={() => setIsAnswerModalOpen(false)} title="Soruyu Cevapla">
         {selectedQuestion && (
           <div className="space-y-5">
@@ -248,7 +247,6 @@ export default function PendingQuestionsPage() {
         )}
       </Modal>
 
-      {/* Add New SSS Modal */}
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Yeni SSS Ekle">
         <div className="space-y-5">
           <div>

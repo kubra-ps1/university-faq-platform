@@ -82,13 +82,13 @@ export default function HomePage() {
       <PublicNavbar />
 
       <main className="flex-1 w-full animate-fade-in relative">
-        {/* Background Decorative Elements */}
+        
         <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-dpu-green/10 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-[10%] left-[-5%] w-[300px] h-[300px] bg-dpu-light/5 rounded-full blur-[80px] pointer-events-none"></div>
 
-        {/* Hero Section */}
+       
         <div className="pt-24 pb-32 px-4 sm:px-6 lg:px-8 relative">
-          {/* Aesthetic Watermark Emblem */}
+          
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 opacity-[0.08] transform rotate-12 scale-[3] blur-[2px]">
             <TreePine size={400} strokeWidth={0.5} className="text-dpu-green" />
           </div>
@@ -123,7 +123,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Search Bar - Aesthetic Float */}
         <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-16 relative z-20 mb-20">
           <div className="glass-card p-2 rounded-[2rem] border-white/10">
             <div className="relative group">
@@ -157,10 +156,10 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Dynamic Content Area */}
+        
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-500 pb-20">
           
-          {/* SEARCH RESULTS */}
+         
           {searchResults.type && searchResults.data.length > 0 && (
             <div className="animate-slide-up space-y-8">
               <div className="flex items-center gap-4">
@@ -190,7 +189,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* SEARCH STATE 3: NONE FOUND */}
           {searchResults.type === 'none' && !isSearching && searchQuery.length > 2 && (
             <div className="glass-card p-12 text-center">
               <div className="w-20 h-20 bg-dpu-navy rounded-full flex items-center justify-center mx-auto mb-6 border border-dpu-green/20">
@@ -204,7 +202,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* CATEGORIES */}
           {!searchQuery && (
             <div className="animate-fade-in space-y-8">
               <div className="flex items-center gap-4">
@@ -258,7 +255,6 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* How It Works Modal */}
       <Modal isOpen={isHowItWorksOpen} onClose={() => setIsHowItWorksOpen(false)} title="Platform Nasıl Çalışır?">
         <div className="space-y-10 p-4">
           {[

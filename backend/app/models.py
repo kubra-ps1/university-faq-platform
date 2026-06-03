@@ -1,4 +1,4 @@
-# models.py  (kök dizin — backend/app/models.py ile aynı)
+
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean,
     ForeignKey, Float, DateTime, Enum
@@ -10,7 +10,7 @@ import enum
 from .database import Base
 
 
-# ── Enum Types ──────────────────────────────────────────────────────────────
+
 
 class UserRole(str, enum.Enum):
     student = "student"
@@ -28,7 +28,6 @@ class AIAction(str, enum.Enum):
     flagged  = "flagged"
 
 
-# ── Tables ──────────────────────────────────────────────────────────────────
 
 class User(Base):
     __tablename__ = "users"
@@ -43,7 +42,7 @@ class User(Base):
     is_active       = Column(Boolean, default=True, nullable=False)
     created_at      = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
+
     questions   = relationship("Question",  back_populates="user",  cascade="all, delete-orphan")
     saved_items = relationship("SavedItem", back_populates="user",  cascade="all, delete-orphan")
     search_logs = relationship("SearchLog", back_populates="user")
@@ -56,7 +55,7 @@ class Category(Base):
     name       = Column(String(255), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
+   
     questions = relationship("Question", back_populates="category")
 
 
@@ -74,7 +73,7 @@ class Question(Base):
     created_at       = Column(DateTime(timezone=True), server_default=func.now())
     answered_at      = Column(DateTime(timezone=True), nullable=True)
 
-    # Relationships
+    
     user     = relationship("User",     back_populates="questions")
     category = relationship("Category", back_populates="questions")
     saved_by = relationship("SavedItem", back_populates="question", cascade="all, delete-orphan")
@@ -93,7 +92,7 @@ class SavedItem(Base):
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
+   
     user     = relationship("User",     back_populates="saved_items")
     question = relationship("Question", back_populates="saved_by")
 
@@ -107,15 +106,12 @@ class SearchLog(Base):
     result_count = Column(Integer, default=0, nullable=False)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
+   
     user = relationship("User", back_populates="search_logs")
 
 
 class AILog(Base):
-    """
-    AI moderasyon geçmişi — diyagramdaki ai_logs tablosu.
-    Her soru kontrol edildiğinde kayıt oluşturulur.
-    """
+
     __tablename__ = "ai_logs"
 
     id           = Column(Integer, primary_key=True, index=True)
@@ -125,5 +121,5 @@ class AILog(Base):
     reason       = Column(Text,   nullable=True)   # Red/işaretleme nedeni
     processed_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
+   
     question = relationship("Question", back_populates="ai_logs")

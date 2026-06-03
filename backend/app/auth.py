@@ -11,7 +11,7 @@ import os
 
 from .database import get_db
 
-# ── Config ───────────────────────────────────────────────────────────────────
+
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
@@ -26,7 +26,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-# ── Şifre İşlemleri ──────────────────────────────────────────────────────────
+
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Düz metin şifreyi hash ile karşılaştırır."""
@@ -42,13 +42,10 @@ def get_password_hash(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
-# ── JWT Token İşlemleri ───────────────────────────────────────────────────────
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """
-    JWT access token oluşturur.
-    data: {"sub": user_email, "role": user_role, "user_id": user_id}
-    """
+ 
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -58,10 +55,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def decode_token(token: str) -> dict:
-    """
-    JWT token'ı decode eder ve payload döndürür.
-    Geçersiz veya süresi dolmuşsa HTTPException fırlatır.
-    """
+  
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Kimlik bilgileri doğrulanamadı.",
@@ -77,16 +71,13 @@ def decode_token(token: str) -> dict:
         raise credentials_exception
 
 
-# ── Dependency: Mevcut Kullanıcı ─────────────────────────────────────────────
+
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db:    Session = Depends(get_db),
 ):
-    """
-    Bearer token'dan kullanıcıyı çeker.
-    Tüm korumalı endpoint'lerde Depends(get_current_user) ile kullanılır.
-    """
+ 
     from . import models  # circular import önlemek için lazy import
 
     payload = decode_token(token)
@@ -109,14 +100,14 @@ def get_current_user(
 def get_current_active_user(
     current_user=Depends(get_current_user),
 ):
-    """Aktif kullanıcı dependency'si (kısayol)."""
+    
     return current_user
 
 
 def require_admin(
     current_user=Depends(get_current_user),
 ):
-    """Sadece admin veya staff rolüne izin verir."""
+   
     if current_user.role not in ("admin", "staff"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -128,7 +119,7 @@ def require_admin(
 def require_student(
     current_user=Depends(get_current_user),
 ):
-    """Sadece öğrenci rolüne izin verir."""
+   
     if current_user.role != "student":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

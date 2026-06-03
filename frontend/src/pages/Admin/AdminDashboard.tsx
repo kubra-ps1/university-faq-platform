@@ -74,7 +74,7 @@ export default function AdminDashboard() {
         <p className="text-dpu-textMuted text-lg font-medium">Platformun performans verilerini ve istatistiklerini takip edin.</p>
       </div>
 
-      {/* Stats Cards */}
+     
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <div className="glass-card p-8 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-default border-dpu-green/20">
           <div className="absolute top-0 right-0 p-4 opacity-20 text-dpu-green group-hover:opacity-30 transition-opacity">
@@ -107,7 +107,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         <div className="glass-card p-8">
           <h3 className="text-xl font-black text-white mb-8 uppercase tracking-wider">Popüler Aramalar</h3>
